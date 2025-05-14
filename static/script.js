@@ -205,7 +205,7 @@ function connectToDatabase(selectedDatabase) {
     let sections = [];
 
     if (selectedDatabase === 'GCP') {
-        sections = ['Demo']; // Directly specify GCP sections
+        sections = ['Demo', 'Mahindra-PoC-V2']; // Directly specify GCP sections
     } else if (selectedDatabase == 'PostgreSQL-Azure') {
         sections = [
             'Finance', 'Customer Support', 'HR', 'Healthcare',

@@ -29,21 +29,10 @@ few_shot_prompt = FewShotChatMessagePromptTemplate(
 
 final_prompt1 = ChatPromptTemplate.from_messages(
     [
-        ("system", static_prompt.format(table_info="{table_info}")),
+        ("system", static_prompt.format(table_details="{table_info}")),
         few_shot_prompt,
         MessagesPlaceholder(variable_name="messages"),
         ("human", "{input}"),
     ]
 )
-# print ("This is final prompt ...." , final_prompt , " .. and this is few shot prompt.." , few_shot_prompt)
-answer_prompt = PromptTemplate.from_template(
-    """Given the user question, corresponding SQL query, and SQL result, answer the user question.
-     Start with SQL query as first line of your answer then follow it with your answer in new line.
-     Respond without modifying any of the nouns or numerical values. 
-     DO NOT modify any of the nouns or numerical values received in SQL result.
 
-Question: {question}
-SQL Query: {query}
-SQL Result: {result}
-Answer: """
-)

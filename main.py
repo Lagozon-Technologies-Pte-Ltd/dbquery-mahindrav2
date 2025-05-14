@@ -23,6 +23,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 import logging
 from logging.config import dictConfig
 from prompts import static_prompt
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 
@@ -106,7 +107,7 @@ class ChartRequest(BaseModel):
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
 openai_client = openai.OpenAI(api_key=OPENAI_API_KEY)
 
-subject_areas1 = ["Demo"]  # For GCP
+subject_areas1 = ["Demo", "Mahindra-PoC-V2"]  # For GCP
 subject_areas2 = [          # For PostgreSQL-Azure
     "Finance", "Customer Support", "HR", "Healthcare",
     "Insurance", "Inventory", "Legal", "Sales"
@@ -538,23 +539,23 @@ async def submit_feedback(request: Request):
         session.close()
         return JSONResponse(content={"success": False, "message": f"Error submitting feedback: {str(e)}"}, status_code=500)
 
-@app.get("/get-tables/")
-async def get_tables(selected_section: str):
-    """
-    Fetches table names for a given section using the get_table_details function.
+# @app.get("/get-tables/")
+# async def get_tables(selected_section: str):
+#     """
+#     Fetches table names for a given section using the get_table_details function.
 
-    Args:
-        selected_section (str): The section to fetch tables for.
+#     Args:
+#         selected_section (str): The section to fetch tables for.
 
-    Returns:
-        JSONResponse: A JSON response containing the list of table names.
-    """
-    # Fetch table details for the selected section
-    table_details = get_table_details(selected_section)
-    # Extract table names dynamically
-    tables = [line.split("Table Name:")[1].strip() for line in table_details.split("\n") if "Table Name:" in line]
-    # Return tables as JSON
-    return {"tables": tables}
+#     Returns:
+#         JSONResponse: A JSON response containing the list of table names.
+#     """
+#     # Fetch table details for the selected section
+#     table_details = get_table_details(selected_section)
+#     # Extract table names dynamically
+#     tables = [line.split("Table Name:")[1].strip() for line in table_details.split("\n") if "Table Name:" in line]
+#     # Return tables as JSON
+#     return {"tables": tables}
 
 if 'messages' not in session_state:
     session_state['messages'] = []
@@ -598,13 +599,16 @@ async def submit_query(
     logger.info(f"Chat history: {chat_history}")
     try:
        # **Step 1: Invoke Unified Prompt**
-        unified_prompt = PROMPTS["unified_prompt"].format(user_query=user_query, chat_history=chat_history)
-        llm_response = llm.invoke(unified_prompt).content.strip()
-        logger.info(f"LLM Unified Prompt Response: {llm_response}")
+        key_parameters = get_key_parameters()
+        unified_prompt = PROMPTS["unified_prompt"].format(user_query=user_query, chat_history=chat_history, key_parameters=key_parameters)
+        llm_reframed_query = llm.invoke(unified_prompt).content.strip()
+        logger.info(f"LLM Unified Prompt Response: {llm_reframed_query}")
+        intent_table = intent_classification(llm_reframed_query)
+        table_details = get_table_details(intent_table)
+        
 
-       
         response, chosen_tables, tables_data, agent_executor = invoke_chain(
-            llm_response, session_state['messages'], model, selected_subject, selected_database
+            llm_reframed_query, session_state['messages'], model, selected_subject, selected_database,table_details
         )
        
       
@@ -656,7 +660,7 @@ async def submit_query(
             "user_query": session_state['user_query'],
             "query": session_state['generated_query'],
             "tables": tables_html,
-            "llm_response": llm_response,
+            "llm_response": llm_reframed_query,
             "chat_response": chat_insight,
             "history": session_state['messages'],
             "interprompt":unified_prompt,

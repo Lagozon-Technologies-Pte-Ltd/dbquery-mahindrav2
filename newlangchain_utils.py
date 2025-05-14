@@ -1,10 +1,26 @@
 import os
 import pandas as pd
 from google.cloud import bigquery
-
+import datetime
 from dotenv import load_dotenv
-load_dotenv()
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder,FewShotChatMessagePromptTemplate,PromptTemplate # type: ignore
+from examples import get_example_selector
 
+import pandas as pd
+import os
+import configure
+from operator import itemgetter
+from langchain.chains.openai_tools import create_extraction_chain_pydantic 
+from langchain_core.pydantic_v1 import BaseModel, Field
+from langchain_openai import ChatOpenAI 
+#from  langchain_openai.chat_models import with_structured_output
+
+OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
+llm = ChatOpenAI(model=configure.selected_models, temperature=0)
+from typing import List
+load_dotenv()
+import csv 
+from io import StringIO
 #table_details_prompt = os.getenv('TABLE_DETAILS_PROMPT')
 # Change if your schema is different
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -33,7 +49,7 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
 from langchain_openai import ChatOpenAI
 
-from table_details import table_chain as select_table
+
 from prompts1 import final_prompt1
 from prompts import final_prompt2
 
@@ -132,7 +148,6 @@ def get_postgres_db(selected_subject, chosen_tables):
     try:
         print(f'postgresql+psycopg2://{quote_plus(db_user)}:{quote_plus(db_password)}@{db_host}:{db_port}/{db_database}')
         print(db_schema)
-        print("Entered try block yoo")
         db = SQLDatabase.from_uri(
             f'postgresql+psycopg2://{quote_plus(db_user)}:{quote_plus(db_password)}@{db_host}:{db_port}/{db_database}',
             schema=db_schema,
@@ -221,16 +236,43 @@ class BigQuerySQLDatabase(SQLDatabase):
         return schema_info
 db = BigQuerySQLDatabase()
 
-# table_info = db.get_table_info()
-# #Save table_info to a text file
-# with open("table_info.txt", "w") as file:
-#     file.write(str(table_info))
+table_info = db.get_table_info()
+#Save table_info to a text file
+with open("table_info.txt", "w") as file:
+    file.write(str(table_info))
 
 print("Table info saved successfully to table_info.txt")
 # @cache_resource
-def get_chain(question, _messages, selected_model, selected_subject, selected_database):
+def get_chain(question, _messages, selected_model, selected_subject, selected_database, table_details):
     llm = ChatOpenAI(model=selected_model, temperature=0)
+    def load_prompt():
+        with open("final_prompt.txt", "r", encoding="utf-8") as file:
+            return file.read()
 
+    FINAL_PROMPT = load_prompt()
+    # Get the static part of the prompt
+    static_prompt = FINAL_PROMPT
+    example_prompt = ChatPromptTemplate.from_messages(
+        [
+            # ("human", "{input}\nSQLQuery:"),
+            ("human", "{input}"),
+            ("ai", "{query}"),
+        ]
+    )
+    few_shot_prompt = FewShotChatMessagePromptTemplate(
+        example_prompt=example_prompt,
+        example_selector=get_example_selector(),
+        input_variables=["input","top_k"],
+    )
+
+    final_prompt1 = ChatPromptTemplate.from_messages(
+        [
+            ("system", static_prompt.format(table_details=table_details)),
+            few_shot_prompt,
+            MessagesPlaceholder(variable_name="messages"),
+            ("human", "{input}"),
+        ]
+    )
     if selected_database=="GCP":
             # Use table selection logic for BigQuery
             table_details = get_table_details(selected_subject)
@@ -240,8 +282,9 @@ def get_chain(question, _messages, selected_model, selected_subject, selected_da
             table_details_prompt = table_details_set_prompt.format(table=table_details)
             table_chain = {"input": itemgetter("question")} | create_extraction_chain_pydantic(Table, llm, system_message=table_details_prompt) | get_tables
             chosen_tables = table_chain.invoke({"question": question})
+            print("Chosen tables are : ", chosen_tables)
             db = BigQuerySQLDatabase()
-            final_prompt = final_prompt1
+            final_prompt = final_prompt1.format()
     else:
         table_details = get_table_details(selected_subject)
         print("Selected subject, inside get chain",selected_subject)
@@ -249,18 +292,14 @@ def get_chain(question, _messages, selected_model, selected_subject, selected_da
         table_details_prompt = table_details_set_prompt.format(table=table_details)
         
         table_chain = {"input": itemgetter("question")} | create_extraction_chain_pydantic(Table, llm, system_message=table_details_prompt) | get_tables
-        print("hiiiii")
         chosen_tables = table_chain.invoke({"question": question})
-        print("helllooo")
         db = get_postgres_db(selected_subject, chosen_tables)
-        print("foolll")
     print("start",selected_database)
     print("Generate Query Starting")
     if selected_database=="GCP":
         print(selected_database)
         final_prompt=final_prompt1
     else:
-        print("kkk")
         final_prompt=final_prompt2    
     generate_query = create_sql_query_chain(llm, db, final_prompt)
     SQL_Statement = generate_query.invoke({"question": question, "messages": _messages})
@@ -287,27 +326,14 @@ def get_chain(question, _messages, selected_model, selected_subject, selected_da
     
     return chain, chosen_tables, SQL_Statement, db
 
-# def read_table_info(file_path):
-#     """
-#     Reads the table schema from a text file as a single string.
-#     """
-#     try:
-#         with open(file_path, 'r', encoding='utf-8') as file:
-#             return file.read()  # Read full content as a string
-#     except Exception as e:
-#         print(f"Error reading table info: {e}")
-#         return ""
-# table_info_text = read_table_info("table_info.txt")  # Load the entire text of the file
 
-def invoke_chain(question, messages, selected_model, selected_subject, selected_database):
-    print("hiii")
+
+def invoke_chain(question, messages, selected_model, selected_subject, selected_database, table_details):
     print(question, messages, selected_model, selected_subject, selected_database)
     try:
-        # if not is_relevant(question, table_info):
-        #     return "I am DBQuery, a generative AI tool developed at Lagozon Technologies for database query generation. Please ask me queries related to your database.", [], {}, None
         print('Model used:', selected_model)
         history = create_history(messages)
-        chain, chosen_tables, SQL_Statement, db = get_chain(question, history.messages, selected_model, selected_subject, selected_database)
+        chain, chosen_tables, SQL_Statement, db = get_chain(question, history.messages, selected_model, selected_subject, selected_database, table_details)
         print(f"Generated SQL Statement in newlangchain_utils: {SQL_Statement}")
         SQL_Statement = SQL_Statement.replace("SQL Query:", "").strip()
 
@@ -354,3 +380,48 @@ def create_history(messages):
 
 def escape_single_quotes(input_string):
     return input_string.replace("'", "''")
+
+glossary = False #boolean for glossary function that is passed in prompt for business words and their explanations
+def get_business_glossary_text():
+    # Read the business glossary CSV
+    glossary_df = pd.read_csv('table_files/business_glossary.csv')
+    
+    # Format each row as "Business Word: Explanation"
+    glossary_lines = [
+        f"{row['Business Word']}: {row['Explanation']}"
+        for _, row in glossary_df.iterrows()
+    ]
+    
+    # Join all lines with newline characters
+    glossary_text = '\n'.join(glossary_lines)
+    print(glossary_text)
+    return glossary_text
+
+def get_key_parameters():
+    params = os.getenv('key_parameters')
+    # Split by comma and strip whitespace
+    return [p.strip() for p in params.split(',') if p.strip()]
+
+def read_defaults(csv_content):
+    f = StringIO(csv_content)
+    reader = csv.DictReader(f)
+    result = {}
+    for row in reader:
+        key = row['default']
+        value = row['value']
+        if value == 'Current_date':
+            value = datetime.now().strftime('%Y-%m-%d')
+        result[key] = value
+    return result
+
+def intent_classification(user_query):
+    user_query_lower = user_query.lower()
+    with open('table_files\Intentclass.csv', newline='', encoding='utf-8') as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            keywords = [k.strip().lower() for k in row['Keywords'].replace(';', ',').split(',')]
+            for keyword in keywords:
+                if keyword and keyword in user_query_lower:
+                    print("returned table from intent: ",row['tables'])
+                    return row['tables']
+    return None
