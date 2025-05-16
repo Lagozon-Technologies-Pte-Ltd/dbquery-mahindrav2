@@ -1,4 +1,4 @@
-import os
+import os, ast
 import pandas as pd
 from google.cloud import bigquery
 import datetime
@@ -50,8 +50,7 @@ from langchain_core.runnables import RunnablePassthrough
 from langchain_openai import ChatOpenAI
 
 
-from prompts1 import final_prompt1
-from prompts import final_prompt2
+# from prompts import final_prompt2
 
 from table_details import get_table_details , get_tables , itemgetter , create_extraction_chain_pydantic, Table 
 from sqlalchemy import create_engine, text
@@ -243,7 +242,7 @@ with open("table_info.txt", "w") as file:
 
 print("Table info saved successfully to table_info.txt")
 # @cache_resource
-def get_chain(question, _messages, selected_model, selected_subject, selected_database, table_details):
+def get_chain(question, _messages, selected_model, selected_subject, selected_database, table_details, selected_business_rule):
     llm = ChatOpenAI(model=selected_model, temperature=0)
     def load_prompt():
         with open("final_prompt.txt", "r", encoding="utf-8") as file:
@@ -262,20 +261,20 @@ def get_chain(question, _messages, selected_model, selected_subject, selected_da
     few_shot_prompt = FewShotChatMessagePromptTemplate(
         example_prompt=example_prompt,
         example_selector=get_example_selector(),
-        input_variables=["input","top_k"],
+        input_variables=["input","top_k","table_info"],
     )
 
     final_prompt1 = ChatPromptTemplate.from_messages(
         [
-            ("system", static_prompt.format(table_details=table_details)),
+            ("system", static_prompt.format(table_info=table_details, Business_Rule = selected_business_rule)),
             few_shot_prompt,
             MessagesPlaceholder(variable_name="messages"),
             ("human", "{input}"),
         ]
     )
+    print("final prompt: ", str(final_prompt1))
     if selected_database=="GCP":
             # Use table selection logic for BigQuery
-            table_details = get_table_details(selected_subject)
             print("selected csv is : ", table_details)
 
             table_details_set_prompt = os.getenv('TABLE_DETAILS_SET_PROMPT')
@@ -284,7 +283,7 @@ def get_chain(question, _messages, selected_model, selected_subject, selected_da
             chosen_tables = table_chain.invoke({"question": question})
             print("Chosen tables are : ", chosen_tables)
             db = BigQuerySQLDatabase()
-            final_prompt = final_prompt1.format()
+            final_prompt = final_prompt1
     else:
         table_details = get_table_details(selected_subject)
         print("Selected subject, inside get chain",selected_subject)
@@ -299,8 +298,8 @@ def get_chain(question, _messages, selected_model, selected_subject, selected_da
     if selected_database=="GCP":
         print(selected_database)
         final_prompt=final_prompt1
-    else:
-        final_prompt=final_prompt2    
+    # else:
+    #     final_prompt=final_prompt2    
     generate_query = create_sql_query_chain(llm, db, final_prompt)
     SQL_Statement = generate_query.invoke({"question": question, "messages": _messages})
     print(f"Generated SQL Statement before execution: {SQL_Statement}")
@@ -324,20 +323,25 @@ def get_chain(question, _messages, selected_model, selected_subject, selected_da
         chosen_tables = db.get_table_names()
         
     
-    return chain, chosen_tables, SQL_Statement, db
+    return chain, chosen_tables, SQL_Statement, db,final_prompt1
 
 
 
-def invoke_chain(question, messages, selected_model, selected_subject, selected_database, table_details):
+def invoke_chain(question, messages, selected_model, selected_subject, selected_database, table_info,selected_business_rule):
     print(question, messages, selected_model, selected_subject, selected_database)
     try:
         print('Model used:', selected_model)
         history = create_history(messages)
-        chain, chosen_tables, SQL_Statement, db = get_chain(question, history.messages, selected_model, selected_subject, selected_database, table_details)
+        chain, chosen_tables, SQL_Statement, db, final_prompt = get_chain(question, history.messages, selected_model, selected_subject, selected_database, table_info,selected_business_rule)
         print(f"Generated SQL Statement in newlangchain_utils: {SQL_Statement}")
         SQL_Statement = SQL_Statement.replace("SQL Query:", "").strip()
 
-        response = chain.invoke({"question": question, "top_k": 3, "messages": history.messages})
+        response = chain.invoke({
+            "question": question,           # <-- Correct key
+            "top_k": 3,
+            "messages": history.messages,
+            "table_details": table_info  # <-- Required by your prompt
+        })
         print("Question:", question)
         print("Response:", response)
         print("Chosen tables:", chosen_tables)
@@ -363,11 +367,11 @@ def invoke_chain(question, messages, selected_model, selected_subject, selected_
                 print(table)
                 break
 
-        return response, chosen_tables, tables_data, db
+        return response, chosen_tables, tables_data, db, final_prompt
 
     except Exception as e:
         print("Error:", e)
-        return "Insufficient information to generate SQL Query.", [], {}, e
+        return "Insufficient information to generate SQL Query.", [], {}, e,None
 
 def create_history(messages):
     history = ChatMessageHistory()
@@ -416,12 +420,31 @@ def read_defaults(csv_content):
 
 def intent_classification(user_query):
     user_query_lower = user_query.lower()
-    with open('table_files\Intentclass.csv', newline='', encoding='utf-8') as csvfile:
+    with open('table_files/Intentclass.csv', newline='', encoding='utf-8') as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
             keywords = [k.strip().lower() for k in row['Keywords'].replace(';', ',').split(',')]
             for keyword in keywords:
                 if keyword and keyword in user_query_lower:
-                    print("returned table from intent: ",row['tables'])
-                    return row['tables']
+                    table_name = row['tables'].strip()  # Remove any extra spaces
+                    print("returned table from intent: ", table_name)
+                    return table_name
     return None
+
+import ast
+
+def get_business_rule(table, file_path='business_rules.txt'):
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            file_content = f.read()
+            business_rules = ast.literal_eval(file_content)
+    except Exception as e:
+        return f"Error reading business rules file: {e}"
+
+    # Normalize table name
+    table = table.lower().strip()
+    rule = business_rules.get(table)
+    if rule:
+        return rule
+    else:
+        return "No specific business rule defined for this table."

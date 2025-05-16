@@ -1,0 +1,27 @@
+{
+    'mh_ro_data.mh_ro_parts_details': (
+        "Apply business rules:"
+        "1. Add filter: SERVC_CATGRY_DESC IN ('Free Service', 'Paid Service', 'En-route Repair') AND "
+        "PartCategoryDescription = 'Spares' AND PART_DESC NOT LIKE '%Filter%'."
+        "2. If user query is about OEM Parts only, add filter: `OEM Part Indicator` = 'Y'."
+        "3. If user query is about Local Parts only, add filter: `OEM Part Indicator` = 'N'."
+        "4. If user query is about showing parts, use 'Part Number' as the unique key and output Part Number, "
+        "Part Description & Calculated value in descending order."
+        "5. Use 'Part Quantity' for COUNT/TOTAL and 'Part Basic Amount' for VALUE/AMOUNT/TOTAL."
+        "6. If user query is about Dealers, use Parent Group Code & Location Code as unique key, and display "
+        "Dealer Name with calculated value in descending order."
+    ),
+
+    'mh_ro_data.mh_ro_labour_details': (
+        "Apply business rules:"
+        "1. Add filter: SERVC_CATGRY_DESC IN ('Free Service', 'Paid Service', 'En-route Repair') AND "
+        "PartCategoryDescription = 'Spares' AND PART_DESC NOT LIKE '%Filter%'."
+        "2. If user query is about OEM Labour only, add filter: LABR_TYPE = 'OEM' AND exclude 'LOC' in LABR_GROP."
+        "3. If user query is about Local Labour only, add filter: LABR_TYPE = 'DLR' AND include 'LOC' in LABR_GROP."
+        "4. If user query is about showing labour, use 'Labour Code' as the unique key and output Labour Code, "
+        "Labour Description & Calculated count in descending order."
+        "5. Use 'STANDRD_HRS' for Labour Hours and 'LABR_BASC_AMNT' for Labour Amount."
+        "6. If user query is about Dealers, use Parent Group Code & Location Code as unique key, and display "
+        "Dealer Name with calculated value in descending order."
+    )
+}

@@ -6,7 +6,6 @@
 
 2. **Date Formatting:** Return months in the format **'Jul-24'**, **'Jun-24'**.
 
-3. **Joins & Relevant Columns**: Ensure that every table reference in SELECT or GROUP BY is properly joined. Validate column names against the table schema provided. For example, use Zone Name from the sales_person_hierarchy table if the user mentions 'Region.
 4. **BigQuery Standards:** Use **standard SQL syntax** for BigQuery, ensuring proper aliasing and readability.
 
 5. **Avoid Unnecessary Fields:** Select only required fields for the query output.
@@ -32,144 +31,13 @@
     Retail Volume | 234.0 | 254.0 | -13.6%
 14. Always sort by DATE_TRUNC(Date, MONTH) in queries where months are displayed. Do not use FORMAT_DATE('%b-%y', Date) for sorting, as it sorts alphabetically instead of chronologically.
 ## Only reference tables and columns that are explicitly listed in the provided schema. Do not invent or use table names (such as product_hierarchy or similar) or columns that are not present in the schema.
-#### **Available Tables & Columns:**
-{table_details}
+#### **Schema for available Tables & Columns:**
+{table_info}
 
--##Employee Role Handling:
-    Whenever the user mentions an employee role or designation (e.g., SERVICE_ADVISOR, TECHNICIAN, WORKSHOP_SUPERVISOR, DRIVER_PICKUP, FINANCE_USER, ELECTRICIAN, etc.), treat it as a specific Employee Type defined in the vehicle_reporting.employee_type table.
-
-Always join vehicle_reporting.employee with vehicle_reporting.employee_type on Employee_Type_ID = EmployeeType_id.
-
-Filter or group by the EmployeeType column using case-insensitive matching (LOWER(EmployeeType) = LOWER('<role>')).
-
-Do not treat employee roles as generic employees or just filter by Employee_Code alone.
-
-This ensures queries are role-specific and accurate.
-- **Whenever a user queries about 'target' it should refer to 'Target Billing Volume' column in billing_data table.**
-- for queries asking about volume dipped or similar , only categorise as 'dipped' or 'increased'.
-- If a user refers to 'Region,' interpret it as 'Zone Name.'
-#### **String Comparisons:**
-Always use `LOWER()` on both sides for string comparisons to enforce case insensitivity. For example:
-- Correct: `WHERE LOWER(p.`Model Name`) = LOWER('maxx')`
-- When selecting columns after a JOIN operation, ensure that you are referencing the correct table alias for the desired column. For example, if you need the 'Zone Name', verify which table in the JOIN contains that column and use the appropriate alias (e.g., `sp`.`Zone Name` if `sp` is the alias for `sales_person_hierarchy`).
--Always define a table or column alias before referencing it elsewhere in the query. Only reference aliases that have been explicitly assigned in the FROM or JOIN clauses. When selecting columns after a JOIN, always use the correct table alias as defined in your query. Avoid referencing undefined aliases or non-existent columns, and ensure all aliases are unique and descriptive to prevent ambiguity
----
-**Example user queries and  generated:"
+Before generating query ensure that all rules below must be applied strictly and literally for generating SQL queries. No assumptions or substitutions.:
+{Business_Rule}
 
 
-
----
-
-### **1. Daily Workload Analysis**
-**Query:** "Show daily repair order counts with labor amounts for April 2025"
-
-
-SELECT
-    DATE(RO_DATE) AS Service_Date,
-    COUNT(RO_ID) AS Repair_Count,
-    SUM(INTL_QUTN_LABR_AMNT) AS Total_Labor_Amount
-FROM MH_RO_DATA.MH_RO_HDR_DETAILS
-WHERE RO_DATE BETWEEN '2025-04-01' AND '2025-04-30'
-GROUP BY Service_Date
-ORDER BY Service_Date;
-
-
----
-
-### **2. Technician Performance**
-**Query:** "Compare total labor amounts handled by each technician in March 2025"
-
-
-SELECT
-    TECH_EMPLY_CD AS Technician_Code,
-    SUM(INTL_QUTN_LABR_AMNT) AS Total_Labor_Amount,
-    COUNT(RO_ID) AS Jobs_Handled
-FROM MH_RO_DATA.MH_RO_HDR_DETAILS
-WHERE RO_DATE BETWEEN '2025-03-01' AND '2025-03-31'
-GROUP BY Technician_Code
-ORDER BY Total_Labor_Amount DESC;
-
-
----
-
-### **3. Parts Usage by Model Group**
-**Query:** "Show total parts amount used per model group for the year 2024"
-
-
-SELECT
-    MODEL_GROP,
-    SUM(`part basic amount`) AS Total_Parts_Amount,
-    COUNT(DISTINCT PART_NUMBR) AS Unique_Parts_Used
-FROM MH_RO_DATA.MH_RO_PARTS_DETAILS
-WHERE `Bill Date` BETWEEN '2024-01-01' AND '2024-12-31'
-GROUP BY MODEL_GROP
-ORDER BY Total_Parts_Amount DESC;
-
-
----
-
-### **4. Customer Feedback Trends**
-**Query:** "List customer verbatim comments and actions taken for closed repair orders in January 2025"
-
-
-SELECT
-    VIN,
-    CUSTMR_VERBTM AS Customer_Comment,
-    VERB_ACTNTAKN AS Action_Taken,
-    RO_STATS,
-    `RO Closed Date`
-FROM MH_RO_DATA.MH_RO_CUST_VERBATIM
-WHERE `RO Closed Date` BETWEEN '2025-01-01' AND '2025-01-31'
-  AND RO_STATS = 'Closed'
-ORDER BY `RO Closed Date` DESC;
-
-
----
-
-### **5. Labor Revenue by Service Category**
-**Query:** "Summarize labor revenue by service category for Q1 2025"
-
-
-SELECT
-    SERVC_CATGRY_DESC,
-    SUM(LABR_BASC_AMNT) AS Total_Labor_Revenue,
-    COUNT(RO_ID) AS Repair_Orders
-FROM MH_RO_DATA.MH_RO_LABOUR_DETAILS
-WHERE `RO Date` BETWEEN '2025-01-01' AND '2025-03-31'
-GROUP BY SERVC_CATGRY_DESC
-ORDER BY Total_Labor_Revenue DESC;
-
-
----
-
-**Final Notes:**
-
-- Ensure all queries adhere to BigQuery syntax.
-- for year based queries always take financial year in cotext (e.g, 2024 means april 2024 to march 2025)
-- Do not generate extra columns or joins unless explicitly requested.
-- All queries should be optimized for performance and readability.
-- Use `LOWER()` for both sides for string comparisons to make them case-insensitive.
-- Ensure `LAG()`, `LEAD()`, and other window functions are ordered by `DATE_TRUNC(Date, MONTH)`. If you are trying to show side by side columns then avoid ordering
-- When using `ORDER BY` in queries with `GROUP BY`, ensure that the `ORDER BY` clause references only columns that are either included in the `GROUP BY` clause or aggregated.
-- **Presentation Standardization:** Apply `ROUND()` to **all numerical outputs** in final SELECT statements, including when calculating growth percentages.
-- **Calculation Preservation:** Perform precise calculations in CTEs/subqueries, only rounding in the final presentation layer.
-- **Zero Handling:** Maintain `ROUND(..., 1)` even when dealing with whole numbers (e.g., 236 â†’ 236.0) and ensure growth percentages are formatted with `CONCAT(ROUND(value, 1), '%')`.
-- **Validate that every alias (s, b, p) is correctly referenced before use.**
-- Before generating the final SQL query, make sure to verify that all column references (e.g., `Employee_Name`, `Employee_Type`, `REG_NUMBR`, `SERVICE_TYPE`, etc.) are being pulled from the correct tables, such as `employee`, `employee_type`, `sample_data`, and others, based on the appropriate JOIN conditions and the table schemas provided.- When using DATE_TRUNC for sorting purposes, ensure it has an alias prefixed with an underscore (e.g., _Month_Start) to signify that it should not be included in the final output shown to the user.
----
-
-**Additional Guidance:**
-
-When using Common Table Expressions (CTEs), ensure that all necessary columns are included in the CTE to avoid referencing undefined table aliases or columns in subsequent queries. For example, if you need to order by a date column, include that column in the CTE.
-
----
-
-**CORE PRINCIPLE: Consistent Date Handling**
-
-    - If you are using FORMAT_DATE to display the month or quarter (e.g., 'Jul-24' or 'Apr-24'), you MUST also include DATE_TRUNC(Date, MONTH) or DATE_TRUNC(Date, QUARTER) respectively in the SELECT statement and include it in the GROUP BY clause. The ORDER BY clause for chronological sorting MUST then reference the DATE_TRUNC column (or an aggregation of it). For quarterly data, ensure you are grouping by both the DATE_TRUNC(Date, QUARTER) and the formatted quarter (e.g., FORMAT_DATE('%b-%y', DATE_TRUNC(Date, QUARTER))).
-
-
-Here is the business glossary for dataset:
 
 
 

@@ -22,7 +22,7 @@ from azure.storage.blob import BlobServiceClient
 from starlette.middleware.base import BaseHTTPMiddleware
 import logging
 from logging.config import dictConfig
-
+from prompts import static_prompt
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 
@@ -106,12 +106,7 @@ class ChartRequest(BaseModel):
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
 openai_client = openai.OpenAI(api_key=OPENAI_API_KEY)
 
-subject_areas1 = ["Demo", "Mahindra-PoC-V2"]  # For GCP
-subject_areas2 = [          # For PostgreSQL-Azure
-    "Finance", "Customer Support", "HR", "Healthcare",
-    "Insurance", "Inventory", "Legal", "Sales"
-]
-databases = ["GCP", "PostgreSQL-Azure"]
+subject_areas1 = os.getenv('subject_areas1').split(',')
 question_dropdown = os.getenv('Question_dropdown')
 llm = ChatOpenAI(model='gpt-4o-mini', temperature=0)  # Adjust model as necessary
 from table_details import get_table_details  # Importing the function
@@ -248,7 +243,7 @@ async def add_to_faqs(data: QueryInput):
     if not query:
         raise HTTPException(status_code=400, detail="Invalid query!")
 
-    blob_name = 'table_files/mahindra_questions.csv'
+    blob_name = 'table_files/Demo_questions.csv'
 
     try:
         # Get the blob client
@@ -364,6 +359,7 @@ async def generate_chart(request: ChartRequest):
 
 @app.get("/download-table/")
 @app.get("/download-table")
+
 async def download_table(table_name: str):
     """
     Downloads a table as an Excel file.
@@ -430,7 +426,6 @@ async def transcribe_audio(file: UploadFile = File(...)):
     except Exception as e:
         return JSONResponse(content={"error": f"Error transcribing audio: {str(e)}"}, status_code=500)
 
-@app.get("/get_questions/")
 @app.get("/get_questions")
 async def get_questions(subject: str):
     """
@@ -470,6 +465,7 @@ async def get_questions(subject: str):
         return JSONResponse(
             content={"error": f"An error occurred while reading the file: {str(e)}"}, status_code=500
         )
+
 # Function to load prompts from YAML
 
 def load_prompts():
@@ -488,73 +484,24 @@ def load_prompts():
 
 # Load prompts at startup
 PROMPTS = load_prompts()
-@app.post("/submit_feedback/")
-@app.post("/submit_feedback")
-async def submit_feedback(request: Request):
-    data = await request.json() # Corrected for FastAPI
-    
-    table_name = data.get("table_name")
-    feedback_type = data.get("feedback_type")
-    user_query = data.get("user_query")
-    sql_query = data.get("sql_query")
 
-    if not table_name or not feedback_type:
-        return JSONResponse(content={"success": False, "message": "Table name and feedback type are required."}, status_code=400)
+@app.get("/get-tables/")
+async def get_tables(selected_section: str):
+    """
+    Fetches table names for a given section using the get_table_details function.
 
-    try:
-        # Create database connection
-        engine = create_engine(
-        f'postgresql+psycopg2://{quote_plus(db_user)}:{quote_plus(db_password)}@{db_host}:{db_port}/{db_database}'
-        )
-        Session = sessionmaker(bind=engine)
-        session = Session()
+    Args:
+        selected_section (str): The section to fetch tables for.
 
-        # Sanitize input (Escape single quotes)
-        table_name = escape_single_quotes(table_name)
-        user_query = escape_single_quotes(user_query)
-        sql_query = escape_single_quotes(sql_query)
-        feedback_type = escape_single_quotes(feedback_type)
-
-        # Insert feedback into database
-        insert_query = f"""
-        INSERT INTO lz_feedbacks (department, user_query, sql_query, table_name, data, feedback_type, feedback)
-        VALUES ('unknown', :user_query, :sql_query, :table_name, 'no data', :feedback_type, 'user feedback')
-        """
-
-        session.execute(insert_query, {
-        "table_name": table_name,
-        "user_query": user_query,
-        "sql_query": sql_query,
-        "feedback_type": feedback_type
-        })
-
-        session.commit()
-        session.close()
-
-        return JSONResponse(content={"success": True, "message": "Feedback submitted successfully!"})
-
-    except Exception as e:
-        session.rollback()
-        session.close()
-        return JSONResponse(content={"success": False, "message": f"Error submitting feedback: {str(e)}"}, status_code=500)
-
-# @app.get("/get-tables/")
-# async def get_tables(selected_section: str):
-#     """
-#     Fetches table names for a given section using the get_table_details function.
-
-#     Args:
-#         selected_section (str): The section to fetch tables for.
-
-#     Returns:
-#         JSONResponse: A JSON response containing the list of table names.
-#     """
-#     # Fetch table details for the selected section
-#     table_details = get_table_details(selected_section)
-#     # Extract table names dynamically
-#     tables = [line.split("Table Name:")[1].strip() for line in table_details.split("\n") if "Table Name:" in line]
-#     # Return tables as JSON
-#     return {"tables": tables}
+    Returns:
+        JSONResponse: A JSON response containing the list of table names.
+    """
+    # Fetch table details for the selected section
+    table_details = get_table_details(selected_section)
+    # Extract table names dynamically
+    tables = [line.split("Table Name:")[1].strip() for line in table_details.split("\n") if "Table Name:" in line]
+    # Return tables as JSON
+    return {"tables": tables}
 
 if 'messages' not in session_state:
     session_state['messages'] = []
@@ -563,7 +510,6 @@ if 'messages' not in session_state:
 async def submit_query(
     request: Request,
     section: str = Form(...),
-    database: str = Form(...), 
     user_query: str = Form(...),
     page: int = Query(1),
     records_per_page: int = Query(10),
@@ -584,8 +530,6 @@ async def submit_query(
         logger.info("Session restarted due to 'break' query.")
         return JSONResponse(content=response_data)        
     selected_subject = section
-    selected_database= database
-
     session_state['user_query'] = user_query
 
     # Append user's message to chat history
@@ -597,26 +541,15 @@ async def submit_query(
     )  
     logger.info(f"Chat history: {chat_history}")
     try:
-       # **Step 1: Invoke Unified Prompt**
-        key_parameters = get_key_parameters()
-        unified_prompt = PROMPTS["unified_prompt"].format(user_query=user_query, chat_history=chat_history, key_parameters=key_parameters)
-        llm_reframed_query = llm.invoke(unified_prompt).content.strip()
-        logger.info(f"LLM Unified Prompt Response: {llm_reframed_query}")
-        intent_table = intent_classification(llm_reframed_query)
-        logger.info(f"Intent table: {intent_table}")
+        # **Step 1: Invoke Unified Prompt**
+        unified_prompt = PROMPTS["unified_prompt"].format(user_query=user_query, chat_history=chat_history)
+        llm_response = llm.invoke(unified_prompt).content.strip()
+        logger.info(f"LLM Unified Prompt Response: {llm_response}")
 
-        table_details = get_table_details(selected_subject=selected_subject,table_name=intent_table)
-        logger.info(f"table details: {table_details}")
-
-        selected_business_rule= get_business_rule(table=intent_table)
-        
-
-
-        response, chosen_tables, tables_data, agent_executor, final_prompt = invoke_chain(
-            llm_reframed_query, session_state['messages'], model, selected_subject, selected_database,table_details,selected_business_rule
-        )
        
-      
+        response, chosen_tables, tables_data, agent_executor = invoke_chain(
+            llm_response, session_state['messages'], model, selected_subject
+        )
 
         if isinstance(response, str):
             session_state['generated_query'] = response
@@ -633,6 +566,7 @@ async def submit_query(
         if chosen_tables:
             data_preview = tables_data[chosen_tables[0]].head(5).to_string(index=False) if chosen_tables else "No Data"
             logger.info(f"Data Preview: {data_preview}")
+            
             insights_prompt = PROMPTS["insights_prompt"].format(
                 sql_query=sql_query,
                 table_data=tables_data
@@ -665,13 +599,12 @@ async def submit_query(
             "user_query": session_state['user_query'],
             "query": session_state['generated_query'],
             "tables": tables_html,
-            "llm_response": llm_reframed_query,
+            "llm_response": llm_response,
             "chat_response": chat_insight,
             "history": session_state['messages'],
             "interprompt":unified_prompt,
-            "langprompt": str(final_prompt)
+            "langprompt": static_prompt
         }
-        logger.info("langprompt: %s", final_prompt)
         logger.info("Returning JSON response.")
         return JSONResponse(content=response_data)
 
@@ -740,9 +673,7 @@ async def read_root(request: Request):
     # Pass dynamically populated dropdown options to the template
     return templates.TemplateResponse("index.html", {
         "request": request,
-        "databases": databases,                                     
-        "subject_areas1": subject_areas1,
-        "subject_areas2": subject_areas2,
+        "section": subject_areas1,
         "tables": tables,        # Table dropdown based on database selection
         "question_dropdown": question_dropdown.split(','),  # Static questions from env
     })
@@ -764,8 +695,10 @@ def display_table_with_styles(data, table_name, page_number, records_per_page):
     start_index = (page_number - 1) * records_per_page
     end_index = start_index + records_per_page
     page_data = data.iloc[start_index:end_index]
+
     # Ensure that the index always starts from 1 for each page
     page_data.index = range(start_index + 1, start_index + 1 + len(page_data))
+
     styled_table = page_data.style.set_table_attributes('style="border: 2px solid black; border-collapse: collapse;"') \
         .set_table_styles(
             [{
