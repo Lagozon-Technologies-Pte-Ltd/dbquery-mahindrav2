@@ -603,8 +603,27 @@ async def submit_query(
         llm_reframed_query = llm.invoke(unified_prompt).content.strip()
         logger.info(f"LLM Unified Prompt Response: {llm_reframed_query}")
         intent_table = intent_classification(llm_reframed_query)
+        # if not intent_table:
+        #     intent_table = "Please rephrase or add more details to your question as I am not able to assess the Intended Use case"
         logger.info(f"Intent table: {intent_table}")
-
+        if not intent_table:
+            error_msg = "Please rephrase or add more details to your question as I am not able to assess the Intended Use case"
+            session_state['messages'].append({
+                "role": "assistant",
+                "content": error_msg
+            })
+            
+            response_data = {
+                "user_query": session_state['user_query'],
+                "query": "",
+                "tables": "",
+                "llm_response": llm_reframed_query,
+                "chat_response": error_msg,
+                "history": session_state['messages'],
+                "interprompt": unified_prompt,
+                "langprompt": ""
+            }
+            return JSONResponse(content=response_data)
         table_details = get_table_details(selected_subject=selected_subject,table_name=intent_table)
         logger.info(f"table details: {table_details}")
 

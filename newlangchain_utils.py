@@ -429,7 +429,9 @@ def intent_classification(user_query):
                     table_name = row['tables'].strip()  # Remove any extra spaces
                     print("returned table from intent: ", table_name)
                     return table_name
-    return None
+    
+    return False
+
 
 import ast
 
