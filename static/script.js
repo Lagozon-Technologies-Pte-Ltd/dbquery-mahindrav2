@@ -208,8 +208,7 @@ function connectToDatabase(selectedDatabase) {
         sections = ['Demo', 'Mahindra-PoC-V2']; // Directly specify GCP sections
     } else if (selectedDatabase == 'PostgreSQL-Azure') {
         sections = [
-            'Finance', 'Customer Support', 'HR', 'Healthcare',
-            'Insurance', 'Inventory', 'Legal', 'Sales'
+            'Mah-POC-Azure'
         ]; // Directly specify PostgreSQL sections
     } else {
         console.error('Unknown database selected:', selectedDatabase);

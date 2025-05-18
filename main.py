@@ -106,11 +106,6 @@ class ChartRequest(BaseModel):
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
 openai_client = openai.OpenAI(api_key=OPENAI_API_KEY)
 
-subject_areas1 = ["Demo", "Mahindra-PoC-V2"]  # For GCP
-subject_areas2 = [          # For PostgreSQL-Azure
-    "Finance", "Customer Support", "HR", "Healthcare",
-    "Insurance", "Inventory", "Legal", "Sales"
-]
 databases = ["GCP", "PostgreSQL-Azure"]
 question_dropdown = os.getenv('Question_dropdown')
 llm = ChatOpenAI(model='gpt-4o-mini', temperature=0)  # Adjust model as necessary
@@ -632,7 +627,7 @@ async def submit_query(
 
 
         response, chosen_tables, tables_data, agent_executor, final_prompt = invoke_chain(
-            llm_reframed_query, session_state['messages'], model, selected_subject, selected_database,table_details,selected_business_rule
+            llm_reframed_query, session_state['messages'], model, selected_subject, selected_database,table_details,selected_business_rule, intent_table
         )
        
       
@@ -760,8 +755,6 @@ async def read_root(request: Request):
     return templates.TemplateResponse("index.html", {
         "request": request,
         "databases": databases,                                     
-        "subject_areas1": subject_areas1,
-        "subject_areas2": subject_areas2,
         "tables": tables,        # Table dropdown based on database selection
         "question_dropdown": question_dropdown.split(','),  # Static questions from env
     })

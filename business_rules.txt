@@ -1,27 +1,78 @@
 {
     'mh_ro_data.mh_ro_parts_details': (
         "Apply business rules:"
-        "1. Add filter: SERVC_CATGRY_DESC IN ('Free Service', 'Paid Service', 'En-route Repair') AND "
-        "PartCategoryDescription = 'Spares' AND PART_DESC NOT LIKE '%Filter%'."
-        "2. If user query is about OEM Parts only, add filter: `OEM Part Indicator` = 'Y'."
-        "3. If user query is about Local Parts only, add filter: `OEM Part Indicator` = 'N'."
-        "4. If user query is about showing parts, use 'Part Number' as the unique key and output Part Number, "
-        "Part Description & Calculated value in descending order."
-        "5. Use 'Part Quantity' for COUNT/TOTAL and 'Part Basic Amount' for VALUE/AMOUNT/TOTAL."
-        "6. If user query is about Dealers, use Parent Group Code & Location Code as unique key, and display "
-        "Dealer Name with calculated value in descending order."
+        "1. Filter by SERVC_CATGRY_DESC IN ('Free Service', 'Paid Service', 'En-route Repair', 'Running Repair') "
+        "AND Part Category Description = 'Spares' AND PART_DESC NOT LIKE '%Filter%'. "
+        "2. For OEM Parts, add filter: OEM Part Indicator = TRUE. "
+        "3. For Local Parts, add filter: OEM Part Indicator = FALSE. "
+        "4. Use Part Quantity for count-based metrics and part basic amount for value/revenue calculations. "
+        "5. When asked for Top Parts, group by PART_NUMBR, return PART_DESC, total count and amount in descending order. "
+        "6. For trend analysis, use RO Date or Bill Date to analyze PART_NUMBR over time. "
+        "7. Use VIN to join with other tables for combined analysis (e.g., repeat jobs, VoC). "
+        "8. For dealer-level analysis, group by Dealer Parent Group Code and Dealer Location Code. "
+        "9. Categorize SERVC_CATGRY_DESC as follows: "
+        "Mechanical: ('Free Service', 'Paid Service', 'Running Repair', 'En-route Repair'); "
+        "Bodyshop: 'Bodyshop'; Accessories: 'Sales & Service Accessories'; Pre-Sale: 'Pre Delivery Inspection'. "
+        "10. Use RO Closed Date if the query context is about completed repairs; use RO Date otherwise."
+    ),
+
+    'mh_ro_data.mh_ro_hdr_details': (
+        "Apply business rules:"
+        "1. Use RO_DATE for financial year analysis. Financial Year is from April of the given year to March of next year. "
+        "2. When asked about repeat repairs, find ROs for same VIN where current RO_DATE is within 30 days or 5000km of previous CLOSD_DATE or ODMTR_REDNG. "
+        "3. For trend analysis, use RO_DATE or CLOSD_DATE as time dimension. "
+        "4. For Voice of Customer (VoC), look for customer feedback fields like REPT_REMRKS, PENDNCY_RESN_REMRK, etc. "
+        "5. Categorize SERVC_TYPE into: Mechanical (Free, Paid, Running Repairs, En-route Repair), Bodyshop, Accessories, Pre-Sale. "
+        "6. To find delayed deliveries, use PROMSD_DELVRY_DATE vs CLOSD_DATE or REVSD_PROMSD_DELVRY_DATE. "
+        "7. Use REVST_IND to identify revised repair orders. "
+        "8. Use INTL_QUTN_TOTL_AMNT and REVSD_QUTN_TOTL_AMNT for quotation value-based queries. "
+        "9. Use RSA_IND and SHILD_IND to analyze warranty or assistance schemes. "
+        "10. Use RO_ID as the unique identifier and VIN as join key across tables."
     ),
 
     'mh_ro_data.mh_ro_labour_details': (
         "Apply business rules:"
-        "1. Add filter: SERVC_CATGRY_DESC IN ('Free Service', 'Paid Service', 'En-route Repair') AND "
-        "PartCategoryDescription = 'Spares' AND PART_DESC NOT LIKE '%Filter%'."
-        "2. If user query is about OEM Labour only, add filter: LABR_TYPE = 'OEM' AND exclude 'LOC' in LABR_GROP."
-        "3. If user query is about Local Labour only, add filter: LABR_TYPE = 'DLR' AND include 'LOC' in LABR_GROP."
-        "4. If user query is about showing labour, use 'Labour Code' as the unique key and output Labour Code, "
-        "Labour Description & Calculated count in descending order."
-        "5. Use 'STANDRD_HRS' for Labour Hours and 'LABR_BASC_AMNT' for Labour Amount."
-        "6. If user query is about Dealers, use Parent Group Code & Location Code as unique key, and display "
-        "Dealer Name with calculated value in descending order."
+
+        "1. Add filter: SERVC_CATGRY_DESC IN ('Free Service', 'Paid Service', 'En-route Repair')."
+
+        "2. If query involves parts, also filter: FAMLY_DESC = 'Spares' AND LABR_DESC NOT LIKE '%Filter%'."
+
+        "3. For OEM Labour-specific queries: add filter LABR_TYPE = 'OEM' AND LABR_GROP NOT LIKE '%LOC%'."
+
+        "4. For Local Labour-specific queries: add filter LABR_TYPE = 'DLR' AND LABR_GROP LIKE '%LOC%'."
+
+        "5. If query is about Labour summary: use LABR_CD as unique identifier. Output LABR_CD, LABR_DESC, and calculated count of LABR_CD in descending order."
+
+        "6. Use STANDRD_HRS for Labour Hours and LABR_BASC_AMNT for Labour Amount in calculations."
+
+        "7. If query is about Dealers: use Dealer Parent Group Code and Dealer Location Code as unique keys, and display Dealer Parent Name with calculated value in descending order."
+    ),
+
+    'mh_ro_data.mh_ro_cust_verbatim': (
+    "Apply business rules:"
+
+    "1. Use filters on date fields like RO Date, RO Closed Date, or Bill Date based on user-specified time range."
+
+    "2. If the user asks about customer complaints or feedback, use CUSTMR_VERBTM as the main text field."
+
+    "3. If the query refers to observations or technician notes, use VERB_OBSRVATNS."
+
+    "4. If the query refers to actions taken or resolutions, use VERB_ACTNTAKN."
+
+    "5. For analysis by repair order status, apply filters or group by RO_STATS."
+
+    "6. If the query mentions vehicle-wise feedback or complaint tracking, use VIN as a unique identifier."
+
+    "7. If user is looking for model-specific trends, use MODEL_GROP for filtering or grouping."
+
+    "8. For Dealer-level insights, use Dealer Zone as a filter or grouping field."
+
+    "9. For complaint categorization, use CUST_VERBTM_CD as the classification field."
+
+    "10. If summary is requested, aggregate by VIN or RO_ID and show counts of complaints or actions taken."
     )
+
 }
+
+
+

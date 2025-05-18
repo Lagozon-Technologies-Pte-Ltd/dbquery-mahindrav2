@@ -327,7 +327,7 @@ def get_chain(question, _messages, selected_model, selected_subject, selected_da
 
 
 
-def invoke_chain(question, messages, selected_model, selected_subject, selected_database, table_info,selected_business_rule):
+def invoke_chain(question, messages, selected_model, selected_subject, selected_database, table_info,selected_business_rule, intent_table):
     print(question, messages, selected_model, selected_subject, selected_database)
     try:
         print('Model used:', selected_model)
