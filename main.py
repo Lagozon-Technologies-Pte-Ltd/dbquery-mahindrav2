@@ -67,7 +67,7 @@ load_dotenv()  # Load environment variables from .env file
 app = FastAPI()
 app.add_middleware(SessionMiddleware, secret_key="your-secret-key")
 app.add_middleware(LoggingMiddleware)
-
+gpt_model = os.getenv('gpt_model')
 # Set up static files and templates
 templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -108,7 +108,7 @@ openai_client = openai.OpenAI(api_key=OPENAI_API_KEY)
 
 databases = ["GCP", "PostgreSQL-Azure"]
 question_dropdown = os.getenv('Question_dropdown')
-llm = ChatOpenAI(model='gpt-4o-mini', temperature=0)  # Adjust model as necessary
+llm = ChatOpenAI(model=gpt_model, temperature=0)  # Adjust model as necessary
 from table_details import get_table_details  # Importing the function
 if 'messages' not in session_state:
     session_state['messages'] = []
@@ -550,6 +550,17 @@ async def submit_feedback(request: Request):
 #     tables = [line.split("Table Name:")[1].strip() for line in table_details.split("\n") if "Table Name:" in line]
 #     # Return tables as JSON
 #     return {"tables": tables}
+import csv
+
+def get_keyphrases():
+    keyphrases = []
+    with open('table_files\keyphrases_rephrasing.csv', newline='', encoding='utf-8') as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            # Assumes the column is named exactly 'keyphrases'
+            if 'keyphrases' in row and row['keyphrases']:
+                keyphrases.append(row['keyphrases'])
+    return ','.join(keyphrases)
 
 if 'messages' not in session_state:
     session_state['messages'] = []
@@ -562,7 +573,7 @@ async def submit_query(
     user_query: str = Form(...),
     page: int = Query(1),
     records_per_page: int = Query(10),
-    model: Optional[str] = Form("gpt-4o-mini")
+    model: Optional[str] = Form(gpt_model)
 ):
     logger.info(f"Received /submit request with query: {user_query}, section: {section}, page: {page}, records_per_page: {records_per_page}, model: {model}")
     if user_query.lower() == 'break':
@@ -594,7 +605,8 @@ async def submit_query(
     try:
        # **Step 1: Invoke Unified Prompt**
         key_parameters = get_key_parameters()
-        unified_prompt = PROMPTS["unified_prompt"].format(user_query=user_query, chat_history=chat_history, key_parameters=key_parameters)
+        keyphrases = get_keyphrases()
+        unified_prompt = PROMPTS["unified_prompt"].format(user_query=user_query, chat_history=chat_history, key_parameters=key_parameters, keyphrases=keyphrases)
         llm_reframed_query = llm.invoke(unified_prompt).content.strip()
         logger.info(f"LLM Unified Prompt Response: {llm_reframed_query}")
         intent_table = intent_classification(llm_reframed_query)

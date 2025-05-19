@@ -8,9 +8,9 @@ unified_prompt: |
 
   Ensure the response directly addresses the user's query while maintaining the historical context.
 
-  Include all relevant details of key parameters {key_parameters} from previous queries to ensure accurate data retrieval.
-
-
+  If there is any previous query in chat history then include all relevant details of key parameters {key_parameters} from previous queries to ensure accurate data retrieval.
+  While rephrasing strictly consider the following phrases as important phrases and keep them intact while rephrasing:
+  {keyphrases}
   Input Data:  
   Chat History:
   {chat_history}
