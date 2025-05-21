@@ -554,7 +554,7 @@ import csv
 
 def get_keyphrases():
     keyphrases = []
-    with open('table_files\keyphrases_rephrasing.csv', newline='', encoding='utf-8') as csvfile:
+    with open('table_files/keyphrases_rephrasing.csv', newline='', encoding='utf-8') as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
             # Assumes the column is named exactly 'keyphrases'
