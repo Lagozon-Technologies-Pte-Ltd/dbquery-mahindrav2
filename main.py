@@ -634,12 +634,12 @@ async def submit_query(
         table_details = get_table_details(selected_subject=selected_subject,table_name=intent_table)
         logger.info(f"table details: {table_details}")
 
-        selected_business_rule= get_business_rule(table=intent_table)
+        selected_business_rule= get_business_rule(tables=intent_table)
         
 
 
         response, chosen_tables, tables_data, agent_executor, final_prompt = invoke_chain(
-            llm_reframed_query, session_state['messages'], model, selected_subject, selected_database,table_details,selected_business_rule, intent_table
+            llm_reframed_query, session_state['messages'], model, selected_subject, selected_database,table_details,selected_business_rule
         )
        
       

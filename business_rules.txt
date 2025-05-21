@@ -1,5 +1,5 @@
 {
-    'mh_ro_data.mh_ro_parts_details': (
+    'MH_RO_PARTS': (
         "Apply business rules:"
         "1. Filter by SERVC_CATGRY_DESC IN ('Free Service', 'Paid Service', 'En-route Repair', 'Running Repair') "
         "AND Part Category Description = 'Spares' AND PART_DESC NOT LIKE '%Filter%'. "
@@ -16,7 +16,7 @@
         "10. Use RO Closed Date if the query context is about completed repairs; use RO Date otherwise."
     ),
 
-    'mh_ro_data.mh_ro_hdr_details': (
+    'MH_RO_HDR_DETAILS': (
         "Apply business rules:"
         "1. Use RO_DATE for financial year analysis. Financial Year is from April of the given year to March of next year. "
         "2. When asked about repeat repairs, find ROs for same VIN where current RO_DATE is within 30 days or 5000km of previous CLOSD_DATE or ODMTR_REDNG. "
@@ -30,7 +30,7 @@
         "10. Use RO_ID as the unique identifier and VIN as join key across tables."
     ),
 
-    'mh_ro_data.mh_ro_labour_details': (
+    'MH_RO_LABOUR': (
         "Apply business rules:"
 
         "1. Add filter: SERVC_CATGRY_DESC IN ('Free Service', 'Paid Service', 'En-route Repair')."
@@ -48,7 +48,7 @@
         "7. If query is about Dealers: use Dealer Parent Group Code and Dealer Location Code as unique keys, and display Dealer Parent Name with calculated value in descending order."
     ),
 
-    'mh_ro_data.mh_ro_cust_verbatim': (
+    'MH_CUST_VERBATIM': (
     "Apply business rules:"
 
     "1. Use filters on date fields like RO Date, RO Closed Date, or Bill Date based on user-specified time range."
@@ -71,6 +71,35 @@
 
     "10. If summary is requested, aggregate by VIN or RO_ID and show counts of complaints or actions taken."
     )
+
+    'MH_MODEL_MASTER': (
+        "Apply business rules:"
+        "1. Use MODL_CD as the unique identifier for model-level analysis."
+        "2. For variant-level queries, use VARNT_CD and VARNT_DESC."
+        "3. To analyze by model group, use MODL_GROP_CD and MODL_GROP_DESC."
+        "4. For family-level segmentation, use FAMLY_CD and FAMLY_DESC."
+        "5. To filter by active models, use ACTV_IND = 'Y'."
+        "6. For segment-based analysis, use SEGMNT_CD."
+        "7. To analyze by fuel type or emission norms, use FUEL_TYPE and EMISSION."
+        "8. For trim or transmission-based queries, use TRIM_LEVL and TRANSMISSION."
+        "9. For color-wise analysis, use COLR_CD."
+        "10. To join with repair or sales tables, use MODL_CD and VARNT_CD as foreign keys."
+    ),
+
+    'MH_AD_AI_DIMENSION': (
+        "Apply business rules:"
+        "1. Use delr_cd as the unique dealer identifier."
+        "2. For analysis by zone, area, or location, use zone_name, area_name, loctn_cd, and loctn_name."
+        "3. To analyze by parent group or hierarchy, use parnt_grp and PARENT_GROUP_NAME."
+        "4. For product division-based segmentation, use prodct_divsn."
+        "5. To filter for active dealers, use actv_ind = 'Y'."
+        "6. For sales management queries, use asm_name, ccm_name, rsm_name, and rccm_name."
+        "7. For dealer-level aggregation, group by delr_name or delr_cd."
+        "8. For cross-table joins (e.g., with RO or parts tables), use loctn_cd and delr_cd as join keys."
+        "9. To analyze customer care performance, use zonal_head_cc."
+        "10. For sales hierarchy insights, use zonal_head_sales and related fields."
+    )
+
 
 }
 

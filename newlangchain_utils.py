@@ -65,6 +65,7 @@ db_host=os.getenv("db_host")
 db_database=os.getenv("db_database")
 db_port=os.getenv("db_port")
 db_schema= os.getenv("db_schema")
+mahindra_tables =  json.loads(os.getenv("mahindra_tables"))
 
 from sqlalchemy.exc import SQLAlchemyError
 def insert_feedback(department, user_query, sql_query, table_name, data, feedback_type="user not reacted", feedback="user not given feedback"):
@@ -142,15 +143,15 @@ def load_votes(table_name):
         raise e  # Propagate the exception
     finally:
         session.close()
-def get_postgres_db(selected_subject, chosen_tables):
-    print("SELECTED SUB",selected_subject,chosen_tables)
+def get_postgres_db(selected_subject, mahindra_tables):
+    print("SELECTED SUB",selected_subject,mahindra_tables)
     try:
         print(f'postgresql+psycopg2://{quote_plus(db_user)}:{quote_plus(db_password)}@{db_host}:{db_port}/{db_database}')
         print(db_schema)
         db = SQLDatabase.from_uri(
             f'postgresql+psycopg2://{quote_plus(db_user)}:{quote_plus(db_password)}@{db_host}:{db_port}/{db_database}',
             schema=db_schema,
-            include_tables=chosen_tables,
+            include_tables=mahindra_tables,
             view_support=True,
             sample_rows_in_table_info=1,
             lazy_table_reflection=True
@@ -272,33 +273,15 @@ def get_chain(question, _messages, selected_model, selected_subject, selected_da
             ("human", "{input}"),
         ]
     )
-    print("final prompt: ", str(final_prompt1))
+    final_prompt = final_prompt1
     if selected_database=="GCP":
-            # Use table selection logic for BigQuery
-            print("selected csv is : ", table_details)
-
-            table_details_set_prompt = os.getenv('TABLE_DETAILS_SET_PROMPT')
-            table_details_prompt = table_details_set_prompt.format(table=table_details)
-            table_chain = {"input": itemgetter("question")} | create_extraction_chain_pydantic(Table, llm, system_message=table_details_prompt) | get_tables
-            chosen_tables = table_chain.invoke({"question": question})
-            print("Chosen tables are : ", chosen_tables)
             db = BigQuerySQLDatabase()
-            final_prompt = final_prompt1
     else:
-        table_details = get_table_details(selected_subject)
-        print("Selected subject, inside get chain",selected_subject)
-        table_details_set_prompt = os.getenv('TABLE_DETAILS_SET_PROMPT')
-        table_details_prompt = table_details_set_prompt.format(table=table_details)
-        
-        table_chain = {"input": itemgetter("question")} | create_extraction_chain_pydantic(Table, llm, system_message=table_details_prompt) | get_tables
-        chosen_tables = table_chain.invoke({"question": question})
-        db = get_postgres_db(selected_subject, chosen_tables)
+     
+        db = get_postgres_db(selected_subject, mahindra_tables)
     print("start",selected_database)
     print("Generate Query Starting")
-    if selected_database=="GCP":
-        print(selected_database)
-        final_prompt=final_prompt1
-    # else:
+
     #     final_prompt=final_prompt2    
     generate_query = create_sql_query_chain(llm, db, final_prompt)
     SQL_Statement = generate_query.invoke({"question": question, "messages": _messages})
@@ -319,20 +302,19 @@ def get_chain(question, _messages, selected_model, selected_subject, selected_da
             result=itemgetter("query")
         )
     )
-    if selected_database == "GCP":
-        chosen_tables = db.get_table_names()
+    
         
     
-    return chain, chosen_tables, SQL_Statement, db,final_prompt1
+    return chain,  SQL_Statement, db,final_prompt1
 
 
 
-def invoke_chain(question, messages, selected_model, selected_subject, selected_database, table_info,selected_business_rule, intent_table):
+def invoke_chain(question, messages, selected_model, selected_subject, selected_database, table_info,selected_business_rule):
     print(question, messages, selected_model, selected_subject, selected_database)
     try:
         print('Model used:', selected_model)
         history = create_history(messages)
-        chain, chosen_tables, SQL_Statement, db, final_prompt = get_chain(question, history.messages, selected_model, selected_subject, selected_database, table_info,selected_business_rule)
+        chain,  SQL_Statement, db, final_prompt = get_chain(question, history.messages, selected_model, selected_subject, selected_database, table_info,selected_business_rule)
         print(f"Generated SQL Statement in newlangchain_utils: {SQL_Statement}")
         SQL_Statement = SQL_Statement.replace("SQL Query:", "").strip()
 
@@ -344,11 +326,10 @@ def invoke_chain(question, messages, selected_model, selected_subject, selected_
         })
         print("Question:", question)
         print("Response:", response)
-        print("Chosen tables:", chosen_tables)
         alchemyEngine = create_engine(f'postgresql+psycopg2://{quote_plus(db_user)}:{quote_plus(db_password)}@{db_host}:{db_port}/{db_database}')
 
         tables_data = {}
-        for table in chosen_tables:
+        for table in mahindra_tables:
             query = response["query"]
             print(f"Executing SQL Query: {query}")
             if selected_database=="GCP":
@@ -367,7 +348,7 @@ def invoke_chain(question, messages, selected_model, selected_subject, selected_
                 print(table)
                 break
 
-        return response, chosen_tables, tables_data, db, final_prompt
+        return response, mahindra_tables, tables_data, db, final_prompt
 
     except Exception as e:
         print("Error:", e)
@@ -420,22 +401,23 @@ def read_defaults(csv_content):
 
 def intent_classification(user_query):
     user_query_lower = user_query.lower()
+    matched_tables = set()
     with open('table_files/Intentclass.csv', newline='', encoding='utf-8') as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
             keywords = [k.strip().lower() for k in row['Keywords'].replace(';', ',').split(',')]
-            for keyword in keywords:
-                if keyword and keyword in user_query_lower:
-                    table_name = row['tables'].strip()  # Remove any extra spaces
-                    print("returned table from intent: ", table_name)
-                    return table_name
-    
+            if any(keyword and keyword in user_query_lower for keyword in keywords):
+                # Split table names by ';' and add each to the set
+                table_names = [t.strip() for t in row['tables'].split(';') if t.strip()]
+                matched_tables.update(table_names)
+    if matched_tables:
+        print("Returned tables from intent:", matched_tables)
+        return list(matched_tables)
     return False
-
 
 import ast
 
-def get_business_rule(table, file_path='business_rules.txt'):
+def get_business_rule(tables, file_path='business_rules.txt'):
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             file_content = f.read()
@@ -443,10 +425,13 @@ def get_business_rule(table, file_path='business_rules.txt'):
     except Exception as e:
         return f"Error reading business rules file: {e}"
 
-    # Normalize table name
-    table = table.lower().strip()
-    rule = business_rules.get(table)
-    if rule:
-        return rule
-    else:
-        return "No specific business rule defined for this table."
+    # Accept both single table (str) and list of tables
+    if isinstance(tables, str):
+        tables = [tables]
+
+    rules = {}
+    for table in tables:
+        key = table.lower().strip()
+        rule = business_rules.get(key)
+        rules[table] = rule if rule else "No specific business rule defined for this table."
+    return rules
