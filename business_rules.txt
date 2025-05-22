@@ -1,317 +1,150 @@
 {
    
-
-/" Use Case 1: Parts in Running Repair "/
-
- 'PARTS_RUNNING_REPAIR': (
-        "Apply business rules:"
-     
-        "1. USE sv_ro_bill_hdr_sk COLUMN TO JOIN THE TABLES MH_RO_HDR_DETAILS AND MH_RO_PARTS"
-        "2. USE MODEL_CD COLUMN TO JOIN THE TABLES MH_MODEL_MASTER AND MH_RO_HDR_DETAILS TO GET MODEL_CO, MODL_GROP_DESC AND FAMILY_DESC INFORMATION."
-        "3. USE parnt_grop, loctn_cd AND prodct_divsn TO JOIN THE TABLES MH_AD_AI_DIMENSION AND MH_RO_HDR_DETAILS TO GET DEALER NAME, DEALER ZONE AND DEALER AREA OFFICE."
-
-
-
-        "4. In the table "MH_RO_HDR_DETAILS",  Filter by SERVC_CATGRY_DESC IN ('Free Service', 'Paid Service', 'En-route Repair', 'Running Repair') " and service group = 'Mechanical' 
-            or 
-            SERVC_CATGRY_DESC IN ('Bodyshop')  and service group = 'Accessories'
-            or 
-            SERVC_CATGRY_DESC IN ('Bodyshop')  and service group = 'Bodyshop'
-            or 
-            SERVC_CATGRY_DESC IN ('Sales & Service')  and service group = 'Accessories'
-            or 
-            SERVC_CATGRY_DESC IN ('Bodyshop')  and service group = 'Pre-Sale/PDI' "  
-
-        
-
-            
-        "5. In the table "MH_RO_PARTS",  common_part_category = 'Spares' AND PART_DESC NOT LIKE '%Filter%'. "
-
-        "6. In the table "MH_RO_PARTS", For OEM Parts, add filter: OEM Part Indicator = Y. "
-        "7. In the table "MH_RO_PARTS", For Local Parts, add filter: OEM Part Indicator = N. "
-        "8. In the table "MH_RO_PARTS", For Parts, CONSIDER BOTH 'Y' AND 'N' FOR OEM Part Indicator. "
-
-        "9. In the table "MH_RO_PARTS", Use Part Quantity for count-based metrics and "partAmount" as part basic amount for Total Value calculations. "
-        "10. For trend analysis, use RO_Bill_Date to analyze PART_NUMBR over time. "
-
-        "11. For any date range data retrieval, use RO_Bill_Date to analyze PART_NUMBR over time. "
-
-        -----------------------------------------------------------------
-        ##  PROBABLE QUERY 1: 
-
-        "11. When asked for Top Parts, group by PART_NUMBR, return PART_NUMB, PART_DESC, total count and "partAmount" as Total Value  and display in descending order. "
-
-        --------------------------
-        ##  PROBABLE QUERY 2: 
-
-        "12. When asked for Top Dealers with top parts consumption, Parent Group Code, Location Code AND prodct_divsn as Unique key and do the calculation.  Display Dealer Name, value in         descending order."
-
-        -----------------------------------------
-        ##  PROBABLE QUERY 3: 
-
-        "13. When asked for Top Zone (Consider Dealer Zone) and ARea Office ( Dealer AREA Office)  with top parts consumption, Parent Group Code, Location Code AND prodct_divsn as Unique key and do the calculation.  Display Dealer ZONE, DEALER AREA OFFICE  AND  value in descending order."
- 
-        -----------------------------------------
-        ##  PROBABLE QUERY 4: 
-
-        "14. When asked for Top Model (MODEL_GROUP AND FAMLY_DESC)   with top parts consumption, use model_cd aS Unique key and do the calculation.  Add MODL_GROUP_DESC AND FAMILY_dESC in the display Dealer Name, value in descending order."
-
-        -----------------------------------------
-        ##  PROBABLE QUERY 5: PENDING user clarification
-
-        -----------------------------------------
-        ##  PROBABLE QUERY 6: PENDING user clarification
-
-        -----------------------------------------
-
+    "PARTS_RUNNING_REPAIR": (
+        "Apply business rules:\n"
+        "1. USE sv_ro_bill_hdr_sk COLUMN TO JOIN THE TABLES MH_RO_HDR_DETAILS AND MH_RO_PARTS.\n"
+        "2. USE MODEL_CD COLUMN TO JOIN THE TABLES MH_MODEL_MASTER AND MH_RO_HDR_DETAILS TO GET MODEL_CO, MODL_GROP_DESC AND FAMILY_DESC INFORMATION.\n"
+        "3. USE parnt_grop, loctn_cd AND prodct_divsn TO JOIN THE TABLES MH_AD_AI_DIMENSION AND MH_RO_HDR_DETAILS TO GET DEALER NAME, DEALER ZONE AND DEALER AREA OFFICE.\n"
+        "4. In the table 'MH_RO_HDR_DETAILS', filter by: SERVC_CATGRY_DESC IN ('Free Service', 'Paid Service', 'En-route Repair', 'Running Repair') AND service group = 'Mechanical' OR SERVC_CATGRY_DESC IN ('Bodyshop') AND service group = 'Accessories' OR SERVC_CATGRY_DESC IN ('Bodyshop') AND service group = 'Bodyshop' OR SERVC_CATGRY_DESC IN ('Sales & Service') AND service group = 'Accessories' OR SERVC_CATGRY_DESC IN ('Bodyshop') AND service group = 'Pre-Sale/PDI'.\n"
+        "5. In the table 'MH_RO_PARTS', common_part_category = 'Spares' AND PART_DESC NOT LIKE '%Filter%'.\n"
+        "6. In the table 'MH_RO_PARTS', for OEM Parts, add filter: OEM Part Indicator = 'Y'.\n"
+        "7. In the table 'MH_RO_PARTS', for Local Parts, add filter: OEM Part Indicator = 'N'.\n"
+        "8. In the table 'MH_RO_PARTS', for Parts, consider both 'Y' and 'N' for OEM Part Indicator.\n"
+        "9. In the table 'MH_RO_PARTS', use Part Quantity for count-based metrics and 'partAmount' as part basic amount for Total Value calculations.\n"
+        "10. For trend analysis, use RO_Bill_Date to analyze PART_NUMBR over time.\n"
+        "11. For any date range data retrieval, use RO_Bill_Date to analyze PART_NUMBR over time.\n"
+        "## PROBABLE QUERY 1:\n"
+        "12. When asked for Top Parts, group by PART_NUMBR, return PART_NUMBR, PART_DESC, total count and 'partAmount' as Total Value, and display in descending order.\n"
+        "## PROBABLE QUERY 2:\n"
+        "13. When asked for Top Dealers with top parts consumption, use Parent Group Code, Location Code AND prodct_divsn as unique key and do the calculation. Display Dealer Name, value in descending order.\n"
+        "## PROBABLE QUERY 3:\n"
+        "14. When asked for Top Zone (Dealer Zone) and Area Office (Dealer AREA Office) with top parts consumption, use Parent Group Code, Location Code AND prodct_divsn as unique key and do the calculation. Display Dealer ZONE, DEALER AREA OFFICE and value in descending order.\n"
+        "## PROBABLE QUERY 4:\n"
+        "15. When asked for Top Model (MODEL_GROUP and FAMLY_DESC) with top parts consumption, use model_cd as unique key and do the calculation. Add MODL_GROUP_DESC AND FAMILY_DESC in the display. Display Dealer Name, value in descending order.\n"
+        "## PROBABLE QUERY 5: PENDING user clarification.\n"
+        "## PROBABLE QUERY 6: PENDING user clarification."
     ),
 
 
---=====================================================================================================================================================
-/" Use Case 2: Labour in Running Repair "/
-
-    'LABOUR_RUNNING_REPAIR': (
-        "Apply business rules:"
-
-
-        --ASK ROHIT HOW TO CATEGIRIZE-- FOR LABOUR IN RUNNING REPAIR Use Case---- 
-
-        "1. USE sv_ro_bill_hdr_sk COLUMN TO JOIN THE TABLES MH_RO_HDR_DETAILS AND MH_RO_LABOUR"
-        "2. USE MODEL_CD COLUMN TO JOIN THE TABLES MH_MODEL_MASTER AND MH_RO_HDR_DETAILS TO GET MODEL_CO, MODL_GROP_DESC AND FAMILY_DESC INFORMATION."
-        "3. USE parnt_grop, loctn_cd AND prodct_divsn TO JOIN THE TABLES MH_AD_AI_DIMENSION AND MH_RO_HDR_DETAILS TO GET DEALER NAME, DEALER ZONE AND DEALER AREA OFFICE."
-
-
-
-        "4. Filter by SERVC_CATGRY_DESC IN ('Free Service', 'Paid Service', 'En-route Repair', 'Running Repair') " and service group = 'Mechanical' 
-            or 
-            SERVC_CATGRY_DESC IN ('Bodyshop') " and service group = 'Accessories'
-            or 
-            SERVC_CATGRY_DESC IN ('Bodyshop') " and service group = 'Bodyshop'
-            or 
-            SERVC_CATGRY_DESC IN ('Sales & Service') " and service group = 'Accessories'
-            or 
-            SERVC_CATGRY_DESC IN ('Bodyshop') " and service group = 'Pre-Sale/PDI' 
-        " ---> Ask Rohit,this  logic is to be from MH_RO_HDR_DETAILS TABLES... HOW TO DO....
-
-            
-         
-        "5. For OEM Labour, add filter: labour_type_name = 'OEM Defined' and exclude labour_group_name = 'Local'"
-        "6. For Local Labour, add filter: labour_type_name = 'Dealer Defined' and include labour_group_name = 'Local'. "
-        "7. For Labour, CONSIDER BOTH 'OEM Defined' AND 'Dealer Defined' FOR labour_type_name. "
-
-
-        "8. Use Labour Hrs from "STANDRD_HRS" for count-based metrics and labour Amount from "labrAmount" for Total Value calculations. "
-        "9. For trend analysis, use RO_Bill_Date to analyze Labour Code over time. "
-
-        -----------------------------------------------------------------
-        PROBABLE QUERY 1: 
-
-        "5. When asked for HIGHEST OR Top Labour, group by Labour Code, return Labour Code, Labour Desc, total "STANDRD_HRS"  and DISPLAY in descending order. "
-
-        --------------------------
-        PROBABLE QUERY 2: 
-
-        "5. When asked for Top Dealers with highest Labour Consumption , Parent Group Code, Location Code AND prodct_divsn as Unique key and do the calculation.  Display Dealer Name, and total of "STANDRD_HRS" as value in descending order."
-
-        -----------------------------------------
-        PROBABLE QUERY 3: 
-
-        "5. When asked for highest OR TOP Labour Zone (Consider Dealer Zone) and ARea Office ( Dealer AREA Office)  with top Labour consumption, Parent Group Code, Location Code AND prodct_divsn as Unique key and do the calculation.  Display Dealer ZONE, DEALER AREA OFFICE  AND  total of "STANDRD_HRS" as value in descending order."
-
-        -----------------------------------------
-        PROBABLE QUERY 4: 
-
-        "5. When asked for Top or highest Model (MODEL_GROUP AND FAMLY_DESC)   with top or highest Labour consumption, use model_cd aS Unique key and do the calculation.  Add MODL_GROUP_DESC AND FAMILY_dESC in the display Dealer Name, AND  total of "STANDRD_HRS" as value in descending order.
-
-        -----------------------------------------
-        PROBABLE QUERY 5: PENDING user clarification
-
-
-        -----------------------------------------
-        PROBABLE QUERY 6: PENDING user clarification
-
-
-        -----------------------------------------
- 
-
-    ),
-
-
---=====================================================================================================================================================
-/" Use Case 3: Trend analysis of part code consumption "/
+'LABOUR_RUNNING_REPAIR': (
+    "Apply business rules:\n"
+    "1. USE sv_ro_bill_hdr_sk COLUMN TO JOIN THE TABLES MH_RO_HDR_DETAILS AND MH_RO_LABOUR.\n"
+    "2. USE MODEL_CD COLUMN TO JOIN THE TABLES MH_MODEL_MASTER AND MH_RO_HDR_DETAILS TO GET MODEL_CO, MODL_GROP_DESC AND FAMILY_DESC INFORMATION.\n"
+    "3. USE parnt_grop, loctn_cd AND prodct_divsn TO JOIN THE TABLES MH_AD_AI_DIMENSION AND MH_RO_HDR_DETAILS TO GET DEALER NAME, DEALER ZONE AND DEALER AREA OFFICE.\n"
+    "4. Filter by: SERVC_CATGRY_DESC IN ('Free Service', 'Paid Service', 'En-route Repair', 'Running Repair') AND service group = 'Mechanical' OR "
+    "SERVC_CATGRY_DESC IN ('Bodyshop') AND service group = 'Accessories' OR "
+    "SERVC_CATGRY_DESC IN ('Bodyshop') AND service group = 'Bodyshop' OR "
+    "SERVC_CATGRY_DESC IN ('Sales & Service') AND service group = 'Accessories' OR "
+    "SERVC_CATGRY_DESC IN ('Bodyshop') AND service group = 'Pre-Sale/PDI'.\n"
+    "5. For OEM Labour, add filter: labour_type_name = 'OEM Defined' AND exclude labour_group_name = 'Local'.\n"
+    "6. For Local Labour, add filter: labour_type_name = 'Dealer Defined' AND include labour_group_name = 'Local'.\n"
+    "7. For Labour, consider both 'OEM Defined' AND 'Dealer Defined' for labour_type_name.\n"
+    "8. Use Labour Hrs from 'STANDRD_HRS' for count-based metrics and labour Amount from 'labrAmount' for Total Value calculations.\n"
+    "9. For trend analysis, use RO_Bill_Date to analyze Labour Code over time.\n"
+    "## PROBABLE QUERY 1:\n"
+    "10. When asked for highest or top Labour, group by Labour Code, return Labour Code, Labour Desc, total 'STANDRD_HRS' and display in descending order.\n"
+    "## PROBABLE QUERY 2:\n"
+    "11. When asked for top Dealers with highest Labour consumption, use Parent Group Code, Location Code AND prodct_divsn as unique key and do the calculation. Display Dealer Name and total of 'STANDRD_HRS' as value in descending order.\n"
+    "## PROBABLE QUERY 3:\n"
+    "12. When asked for highest or top Labour Zone (Dealer Zone) and Area Office (Dealer AREA Office) with top Labour consumption, use Parent Group Code, Location Code AND prodct_divsn as unique key and do the calculation. Display Dealer ZONE, DEALER AREA OFFICE and total of 'STANDRD_HRS' as value in descending order.\n"
+    "## PROBABLE QUERY 4:\n"
+    "13. When asked for top or highest Model (MODEL_GROUP AND FAMILY_DESC) with top or highest Labour consumption, use model_cd as unique key and do the calculation. Add MODL_GROUP_DESC AND FAMILY_DESC in the display. Display Dealer Name and total of 'STANDRD_HRS' as value in descending order.\n"
+    "## PROBABLE QUERY 5: PENDING user clarification.\n"
+    "## PROBABLE QUERY 6: PENDING user clarification."
+),
 
 
 'PARTS_CODE_CONSUMPTION': (
-
-        "1. USE sv_ro_bill_hdr_sk COLUMN TO JOIN THE TABLES MH_RO_HDR_DETAILS AND MH_RO_PARTS"
-        "2. USE MODEL_CD COLUMN TO JOIN THE TABLES MH_MODEL_MASTER AND MH_RO_HDR_DETAILS TO GET MODEL_CO, MODL_GROP_DESC AND FAMILY_DESC INFORMATION."
-        "3. USE parnt_grop, loctn_cd AND prodct_divsn TO JOIN THE TABLES MH_AD_AI_DIMENSION AND MH_RO_HDR_DETAILS TO GET DEALER NAME, DEALER ZONE AND DEALER AREA OFFICE."
-
-        "4. For OEM Parts, add filter: OEM Part Indicator = Y. "
-        "5. For Local Parts, add filter: OEM Part Indicator = N. "
-        "6. For Parts, CONSIDER BOTH 'Y' AND 'N' FOR OEM Part Indicator. "
-
-        "7. Use Part Quantity for count-based metrics and "partAmount"  as part basic amount for Total Value calculations. "
-        "8. For trend analysis, use RO_Bill_Date to analyze PART_NUMBR over time. "
-
-        "9. When asked for Top Parts, group by PART_NUMBR, return PART_NUMB, PART_DESC, total count and DISPLAY in descending order. "
-
-        "10. When asked for Top Dealers with top parts consumption, Parent Group Code, Location Code AND prodct_divsn as Unique key and do the calculation.  Display Dealer Name, value. "
-
-        "11. When asked for Top Zone (Consider Dealer Zone) and ARea Office ( Dealer AREA Office)  with top parts consumption, Parent Group Code, Location Code AND prodct_divsn as Unique key and do the calculation.  Display Dealer ZONE, DEALER AREA OFFICE  AND  value."
-
-
-        "12. When asked for Top Model (MODEL_GROUP AND FAMLY_DESC)   with top parts consumption, use model_cd aS Unique key and do the calculation.  Add MODL_GROUP_DESC AND FAMILY_dESC in the display Dealer Name, value."
-
-
------------------------------------------------------------------
-PROBABLE QUERY 1( month on month):
-
-        "12. When asked for Top Parts, group by PART_NUMBR, return PART_NUMB, PART_DESC, total count and DISPLAY in month on month format."
------------------------------------------------------------------
-PROBABLE QUERY 2( quarter on quarter): 
-
-        "13. When asked for Top Parts, group by PART_NUMBR, return PART_NUMB, PART_DESC, total count and DISPLAY in quarter on quarter format."
------------------------------------------------------------------
-PROBABLE QUERY 3( year on year): 
-
-        "14. When asked for Top Parts, group by PART_NUMBR, return PART_NUMB, PART_DESC, total count and DISPLAY in year on year format."
-
------------------------------------------------------------------
-
+    "1. USE sv_ro_bill_hdr_sk COLUMN TO JOIN THE TABLES MH_RO_HDR_DETAILS AND MH_RO_PARTS.\n"
+    "2. USE MODEL_CD COLUMN TO JOIN THE TABLES MH_MODEL_MASTER AND MH_RO_HDR_DETAILS TO GET MODEL_CO, MODL_GROP_DESC AND FAMILY_DESC INFORMATION.\n"
+    "3. USE parnt_grop, loctn_cd AND prodct_divsn TO JOIN THE TABLES MH_AD_AI_DIMENSION AND MH_RO_HDR_DETAILS TO GET DEALER NAME, DEALER ZONE AND DEALER AREA OFFICE.\n"
+    "4. For OEM Parts, add filter: OEM Part Indicator = 'Y'.\n"
+    "5. For Local Parts, add filter: OEM Part Indicator = 'N'.\n"
+    "6. For Parts, consider both 'Y' AND 'N' for OEM Part Indicator.\n"
+    "7. Use Part Quantity for count-based metrics and 'partAmount' as part basic amount for total value calculations.\n"
+    "8. For trend analysis, use RO_Bill_Date to analyze PART_NUMBR over time.\n"
+    "9. When asked for Top Parts, group by PART_NUMBR, return PART_NUMBR, PART_DESC, total count and display in descending order.\n"
+    "10. When asked for Top Dealers with top parts consumption, use Parent Group Code, Location Code AND prodct_divsn as unique key and do the calculation. Display Dealer Name and value.\n"
+    "11. When asked for Top Zone (Dealer Zone) and Area Office (Dealer AREA Office) with top parts consumption, use Parent Group Code, Location Code AND prodct_divsn as unique key and do the calculation. Display Dealer ZONE, DEALER AREA OFFICE and value.\n"
+    "12. When asked for Top Model (MODEL_GROUP AND FAMILY_DESC) with top parts consumption, use model_cd as unique key and do the calculation. Add MODL_GROUP_DESC AND FAMILY_DESC in the display. Display Dealer Name and value.\n"
+    "## PROBABLE QUERY 1 (month on month):\n"
+    "13. When asked for Top Parts, group by PART_NUMBR, return PART_NUMBR, PART_DESC, total count and display in month-on-month format.\n"
+    "## PROBABLE QUERY 2 (quarter on quarter):\n"
+    "14. When asked for Top Parts, group by PART_NUMBR, return PART_NUMBR, PART_DESC, total count and display in quarter-on-quarter format.\n"
+    "## PROBABLE QUERY 3 (year on year):\n"
+    "15. When asked for Top Parts, group by PART_NUMBR, return PART_NUMBR, PART_DESC, total count and display in year-on-year format."
 ),
-
---=====================================================================================================================================================
-/" Use Case 4: Trend analysis of Labour code consumption "/
 
 'LABOUR_CODE_CONSUMPTION': (
-
-        "1. USE sv_ro_bill_hdr_sk COLUMN TO JOIN THE TABLES MH_RO_HDR_DETAILS AND MH_RO_LABOUR"
-        "2. USE MODEL_CD COLUMN TO JOIN THE TABLES MH_MODEL_MASTER AND MH_RO_HDR_DETAILS TO GET MODEL_CO, MODL_GROP_DESC AND FAMILY_DESC INFORMATION."
-        "3. USE parnt_grop, loctn_cd AND prodct_divsn TO JOIN THE TABLES MH_AD_AI_DIMENSION AND MH_RO_HDR_DETAILS TO GET DEALER NAME, DEALER ZONE AND DEALER AREA OFFICE."
-
-         
-        "4. For OEM Labour, add filter: labour_type_name = 'OEM Defined' and exclude labour_group_name = 'Local'"
-        "5. For Local Labour, add filter: labour_type_name = 'Dealer Defined' and include labour_group_name = 'Local'. "
-        "6. For Labour, CONSIDER BOTH 'OEM Defined' AND 'Dealer Defined' FOR labour_type_name. "
-
-        "7. Use Labour Hrs from "STANDRD_HRS" for count-based metrics and labour Amount from "labrAmount" for Total Value calculations. "
-        "8. For trend analysis, use RO_Bill_Date to analyze Labour Code over time. "
-
-
-        "8. When asked for highest OR TOP Labour, group by Labour Code, return Labour Code, Labour Desc, total "STANDRD_HRS" in descending order. "
-
-        "9. When asked for HIGHEST OR Top Labour, group by Labour Code, return Labour Code, Labour Desc, total "STANDRD_HRS"  and DISPLAY in descending order. "
-
-
-        "10. When asked for Top Dealers with highest Labour Consumption , Parent Group Code, Location Code AND prodct_divsn as Unique key and do the calculation.  Display Dealer Name, and total of "STANDRD_HRS" as value in descending order."
-
-
-        "11. When asked for highest OR TOP Labour Zone (Consider Dealer Zone) and ARea Office ( Dealer AREA Office)  with top Labour consumption, Parent Group Code, Location Code AND prodct_divsn as Unique key and do the calculation.  Display Dealer ZONE, DEALER AREA OFFICE  AND  total of "STANDRD_HRS" as value in descending order."
-
-
-        "12. When asked for Top or highest Model (MODEL_GROUP AND FAMLY_DESC)   with top or highest Labour consumption, use model_cd aS Unique key and do the calculation.  Add MODL_GROUP_DESC AND FAMILY_dESC in the display Dealer Name, AND  total of "STANDRD_HRS" as value in descending order.
-
-
------------------------------------------------------------------
-PROBABLE QUERY 1( month on month):
-
-        "13. When asked for HIGHEST OR Top Labour, Labour Code, return Labour Code, Labour Desc, total "STANDRD_HRS"  and DISPLAY in month on month format."
------------------------------------------------------------------
-PROBABLE QUERY 2( quarter on quarter): 
-
-        "14. When asked for HIGHEST OR Top Labour, Labour Code, return Labour Code, Labour Desc, total "STANDRD_HRS"  and DISPLAY in quarter on quarter format."
------------------------------------------------------------------
-PROBABLE QUERY 3( year on year): 
-
-        "15. When asked for HIGHEST OR Top Labour, Labour Code, return Labour Code, Labour Desc, total "STANDRD_HRS"  and DISPLAY in year on year format."
-
------------------------------------------------------------------
+    "Apply business rules:\n"
+    "1. USE sv_ro_bill_hdr_sk COLUMN TO JOIN THE TABLES MH_RO_HDR_DETAILS AND MH_RO_LABOUR.\n"
+    "2. USE MODEL_CD COLUMN TO JOIN THE TABLES MH_MODEL_MASTER AND MH_RO_HDR_DETAILS TO GET MODEL_CO, MODL_GROP_DESC AND FAMILY_DESC INFORMATION.\n"
+    "3. USE parnt_grop, loctn_cd AND prodct_divsn TO JOIN THE TABLES MH_AD_AI_DIMENSION AND MH_RO_HDR_DETAILS TO GET DEALER NAME, DEALER ZONE AND DEALER AREA OFFICE.\n"
+    "4. For OEM Labour, add filter: labour_type_name = 'OEM Defined' and exclude labour_group_name = 'Local'.\n"
+    "5. For Local Labour, add filter: labour_type_name = 'Dealer Defined' and include labour_group_name = 'Local'.\n"
+    "6. For Labour, consider both 'OEM Defined' and 'Dealer Defined' for labour_type_name.\n"
+    "7. Use Labour Hrs from 'STANDRD_HRS' for count-based metrics and labour amount from 'labrAmount' for total value calculations.\n"
+    "8. For trend analysis, use RO_Bill_Date to analyze Labour Code over time.\n"
+    "9. When asked for highest or top Labour, group by Labour Code. Return Labour Code, Labour Desc, total 'STANDRD_HRS' in descending order.\n"
+    "10. When asked for top Dealers with highest Labour consumption, use Parent Group Code, Location Code AND prodct_divsn as unique key. Display Dealer Name and total of 'STANDRD_HRS' as value in descending order.\n"
+    "11. When asked for top Labour Zone (Dealer Zone) and Area Office (Dealer AREA Office) with highest Labour consumption, use Parent Group Code, Location Code AND prodct_divsn as unique key. Display Dealer ZONE, DEALER AREA OFFICE and total of 'STANDRD_HRS' as value in descending order.\n"
+    "12. When asked for top Model (MODEL_GROUP and FAMILY_DESC) with highest Labour consumption, use model_cd as unique key. Add MODL_GROUP_DESC and FAMILY_DESC in the display. Display Dealer Name and total of 'STANDRD_HRS' as value in descending order.\n"
+    "## PROBABLE QUERY 1 (month on month):\n"
+    "13. When asked for top Labour, group by Labour Code. Return Labour Code, Labour Desc, total 'STANDRD_HRS' and display in month-on-month format.\n"
+    "## PROBABLE QUERY 2 (quarter on quarter):\n"
+    "14. When asked for top Labour, group by Labour Code. Return Labour Code, Labour Desc, total 'STANDRD_HRS' and display in quarter-on-quarter format.\n"
+    "## PROBABLE QUERY 3 (year on year):\n"
+    "15. When asked for top Labour, group by Labour Code. Return Labour Code, Labour Desc, total 'STANDRD_HRS' and display in year-on-year format."
 ),
 
 
 
---=================================================================================================================================================================================
-/" Use Case 5: Top Customer Verbatim Codes  (With word clouds for VoC) "/
 
 
-
-    'WORD_CLOUD_VOC': (
-    "Apply business rules:"
-
-        "1. USE "sv_ro_hdr_sk" COLUMN TO JOIN THE TABLES MH_RO_HDR_DETAILS AND MH_CUST_VERBATIM"
-        "2. USE MODEL_CD COLUMN TO JOIN THE TABLES MH_MODEL_MASTER AND MH_RO_HDR_DETAILS TO GET MODEL_CO, MODL_GROP_DESC AND FAMILY_DESC INFORMATION."
-        "3. USE parnt_grop, loctn_cd AND prodct_divsn TO JOIN THE TABLES MH_AD_AI_DIMENSION AND MH_RO_HDR_DETAILS TO GET DEALER NAME, DEALER ZONE AND DEALER AREA OFFICE."
-
-        "4. Use "demanded_verbatim" for Word Cloud."
-
-        "5. Exclude "demanded_verbatim" having words like "%SCHEDULE%" , "%WASHING%" ,"%MAXICARE%" ,"%WHEEL ALIGNMENT%" ,"%WHEEL BALANCE%" ,"%WASHING AND CLEANING%" ,"%PICKUP%" ,"%DROP OFF
-%" ,"%1000, 10000%" for generating Word Cloud."
-        
-        "6. Use Part Quantity for count-based metrics and "partAmount" as part basic amount for Total Value calculations. "
-
-        "7. Use Labour Hrs from "STANDRD_HRS" for count-based metrics and labour Amount from "labrAmount" for Total Value calculations. "
-
-        "8. For trend analysis, use RO_Bill_Date to analyze "Customer Verbatim Codes" AND  "With word clouds for VoC" over time. "
-
-        "9. In the table "MH_RO_HDR_DETAILS",  Filter by SERVC_CATGRY_DESC IN ('Free Service', 'Paid Service', 'En-route Repair', 'Running Repair') " and service group = 'Mechanical' 
-            or 
-            SERVC_CATGRY_DESC IN ('Bodyshop') " and service group = 'Accessories'
-            or 
-            SERVC_CATGRY_DESC IN ('Bodyshop') " and service group = 'Bodyshop'
-            or 
-            SERVC_CATGRY_DESC IN ('Sales & Service') " and service group = 'Accessories'
-            or 
-            SERVC_CATGRY_DESC IN ('Bodyshop') " and service group = 'Pre-Sale/PDI' 
-
-        "  
-
---------------------------
-PROBABLE QUERY 1: 
-
-        "10. When asked for Top Dealers for Word Cloud, Parent Group Code, Location Code AND prodct_divsn as Unique key and do the calculation.  Display Dealer Name, "demanded_verbatim" as value for Word Cloud in descending order."
-
------------------------------------------
-PROBABLE QUERY 2: 
-
-        "11. When asked for Top Zone (Consider Dealer Zone) and ARea Office ( Dealer AREA Office)  for Word Cloud, Parent Group Code, Location Code AND prodct_divsn as Unique key and do the calculation.  Display Dealer ZONE, DEALER AREA OFFICE  AND "demanded_verbatim" as value for Word Cloud in descending order."
-
------------------------------------------
-PROBABLE QUERY 3: 
-
-        "12. When asked for Top Model (MODEL_GROUP AND FAMLY_DESC) for Word Cloud, use model_cd aS Unique key and do the calculation.  Add MODL_GROUP_DESC AND FAMILY_dESC in the display Dealer Name, "demanded_verbatim" as value for Word Cloud in descending order."
-
------------------------------------------
-
-     ),
-
-
---=================================================================================================================================================================================
-/" Use Case 6: Count of Repeat Repairs "/
+'WORD_CLOUD_VOC': (
+    "Apply business rules:\n"
+    "1. USE 'sv_ro_hdr_sk' COLUMN TO JOIN THE TABLES MH_RO_HDR_DETAILS AND MH_CUST_VERBATIM.\n"
+    "2. USE MODEL_CD COLUMN TO JOIN THE TABLES MH_MODEL_MASTER AND MH_RO_HDR_DETAILS TO GET MODEL_CO, MODL_GROP_DESC AND FAMILY_DESC INFORMATION.\n"
+    "3. USE parnt_grop, loctn_cd AND prodct_divsn TO JOIN THE TABLES MH_AD_AI_DIMENSION AND MH_RO_HDR_DETAILS TO GET DEALER NAME, DEALER ZONE AND DEALER AREA OFFICE.\n"
+    "4. Use 'demanded_verbatim' for Word Cloud.\n"
+    "5. Exclude 'demanded_verbatim' having words like '%SCHEDULE%', '%WASHING%', '%MAXICARE%', '%WHEEL ALIGNMENT%', '%WHEEL BALANCE%', "
+    "'%WASHING AND CLEANING%', '%PICKUP%', '%DROP OFF%', '%1000, 10000%' for generating Word Cloud.\n"
+    "6. Use Part Quantity for count-based metrics and 'partAmount' as part basic amount for total value calculations.\n"
+    "7. Use Labour Hrs from 'STANDRD_HRS' for count-based metrics and labour amount from 'labrAmount' for total value calculations.\n"
+    "8. For trend analysis, use RO_Bill_Date to analyze 'Customer Verbatim Codes' and with word clouds for VoC over time.\n"
+    "9. In the table 'MH_RO_HDR_DETAILS', filter by:\n"
+    "   - (SERVC_CATGRY_DESC IN ('Free Service', 'Paid Service', 'En-route Repair', 'Running Repair') AND service group = 'Mechanical') OR\n"
+    "   - (SERVC_CATGRY_DESC IN ('Bodyshop') AND service group = 'Accessories') OR\n"
+    "   - (SERVC_CATGRY_DESC IN ('Bodyshop') AND service group = 'Bodyshop') OR\n"
+    "   - (SERVC_CATGRY_DESC IN ('Sales & Service') AND service group = 'Accessories') OR\n"
+    "   - (SERVC_CATGRY_DESC IN ('Bodyshop') AND service group = 'Pre-Sale/PDI').\n"
+    "## PROBABLE QUERY 1:\n"
+    "10. When asked for top Dealers for Word Cloud, use Parent Group Code, Location Code AND prodct_divsn as unique key. Display Dealer Name and 'demanded_verbatim' as value for Word Cloud in descending order.\n"
+    "## PROBABLE QUERY 2:\n"
+    "11. When asked for top Zone (Dealer Zone) and Area Office (Dealer AREA Office) for Word Cloud, use Parent Group Code, Location Code AND prodct_divsn as unique key. Display Dealer ZONE, DEALER AREA OFFICE and 'demanded_verbatim' as value for Word Cloud in descending order.\n"
+    "## PROBABLE QUERY 3:\n"
+    "12. When asked for top Model (MODEL_GROUP and FAMILY_DESC) for Word Cloud, use model_cd as unique key. Add MODL_GROUP_DESC and FAMILY_DESC in the display. Show Dealer Name and 'demanded_verbatim' as value for Word Cloud in descending order."
+),
 
 
 'COUNT_OF_REPEAT_REPAIRS': (
+    "Apply business rules:\n"
 
-        "1. USE MODEL_CD COLUMN TO JOIN THE TABLES MH_MODEL_MASTER AND MH_RO_HDR_DETAILS TO GET MODEL_CO, MODL_GROP_DESC AND FAMILY_DESC INFORMATION."
-        "2. USE parnt_grop, loctn_cd AND prodct_divsn TO JOIN THE TABLES MH_AD_AI_DIMENSION AND MH_RO_HDR_DETAILS TO GET DEALER NAME, DEALER ZONE AND DEALER AREA OFFICE."
-        "3. USE "sv_ro_hdr_sk" COLUMN TO JOIN THE TABLES MH_RO_HDR_DETAILS AND MH_CUST_VERBATIM"
-        "4. USE "sv_ro_bill_hdr_sk" COLUMN TO JOIN THE TABLES MH_RO_HDR_DETAILS AND MH_RO_PARTS"
-        "5. USE "sv_ro_bill_hdr_sk" COLUMN TO JOIN THE TABLES MH_RO_HDR_DETAILS AND MH_RO_LABOUR"
-
-        "6. For "Count of Repeat Repairs", commonly sounding Customer VoC "demanded_verbatim" or same part "part_code" or same labour "LABR_CD" 
-        
-        "7. Exclude "demanded_verbatim" having words like "%SCHEDULE%" , "%WASHING%" ,"%MAXICARE%" ,"%WHEEL ALIGNMENT%" ,"%WHEEL BALANCE%" ,"%WASHING AND CLEANING%" ,"%PICKUP%" ,"%DROP OFF
-        %" ,"%1000, 10000%" for Count of Repeat Repairs."
-        
-        "8. For trend analysis, use RO_Bill_Date to analyze "Customer Verbatim Codes" FOR "Count of Repeat Repairs"
-
-
-        "9. When asked for Top Dealers for Word Cloud, Parent Group Code, Location Code AND prodct_divsn as Unique key and do the calculation.  Display Dealer Name, "demanded_verbatim" as     value FOR "Count of Repeat Repairs" in descending order."
-
-        "10. When asked for Top Zone (Consider Dealer Zone) and ARea Office ( Dealer AREA Office)  for Word Cloud, Parent Group Code, Location Code AND prodct_divsn as Unique key and do the calculation.  Display Dealer ZONE, DEALER AREA OFFICE  AND "demanded_verbatim" as value FOR "Count of Repeat Repairs" in descending order."
-
-        "11. When asked for Top Model (MODEL_GROUP AND FAMLY_DESC) for Word Cloud, use model_cd aS Unique key and do the calculation.  Add MODL_GROUP_DESC AND FAMILY_dESC in the display Dealer Name, "demanded_verbatim" as value FOR "Count of Repeat Repairs" in descending order."
-
+    "1. USE MODEL_CD COLUMN TO JOIN THE TABLES MH_MODEL_MASTER AND MH_RO_HDR_DETAILS TO GET MODEL_CO, MODL_GROP_DESC AND FAMILY_DESC INFORMATION.\n"
+    "2. USE parnt_grop, loctn_cd AND prodct_divsn TO JOIN THE TABLES MH_AD_AI_DIMENSION AND MH_RO_HDR_DETAILS TO GET DEALER NAME, DEALER ZONE AND DEALER AREA OFFICE.\n"
+    "3. USE 'sv_ro_hdr_sk' COLUMN TO JOIN THE TABLES MH_RO_HDR_DETAILS AND MH_CUST_VERBATIM.\n"
+    "4. USE 'sv_ro_bill_hdr_sk' COLUMN TO JOIN THE TABLES MH_RO_HDR_DETAILS AND MH_RO_PARTS.\n"
+    "5. USE 'sv_ro_bill_hdr_sk' COLUMN TO JOIN THE TABLES MH_RO_HDR_DETAILS AND MH_RO_LABOUR.\n"
+    "6. For 'Count of Repeat Repairs', use commonly sounding Customer VoC 'demanded_verbatim' or same part 'part_code' or same labour 'LABR_CD'.\n"
+    "7. Exclude 'demanded_verbatim' having words like '%SCHEDULE%', '%WASHING%', '%MAXICARE%', '%WHEEL ALIGNMENT%', '%WHEEL BALANCE%', "
+    "'%WASHING AND CLEANING%', '%PICKUP%', '%DROP OFF%', '%1000, 10000%' for Count of Repeat Repairs.\n"
+    "8. For trend analysis, use RO_Bill_Date to analyze 'Customer Verbatim Codes' for 'Count of Repeat Repairs'.\n"
+    "9. When asked for Top Dealers for Word Cloud, use Parent Group Code, Location Code AND prodct_divsn as unique key and do the calculation. "
+    "Display Dealer Name and 'demanded_verbatim' as value for 'Count of Repeat Repairs' in descending order.\n"
+    "10. When asked for Top Zone (Dealer Zone) and Area Office (Dealer AREA Office) for Word Cloud, use Parent Group Code, Location Code AND prodct_divsn as unique key and do the calculation. "
+    "Display Dealer ZONE, DEALER AREA OFFICE and 'demanded_verbatim' as value for 'Count of Repeat Repairs' in descending order.\n"
+    "11. When asked for Top Model (MODEL_GROUP and FAMILY_DESC) for Word Cloud, use model_cd as unique key and do the calculation. "
+    "Add MODL_GROUP_DESC and FAMILY_DESC in the display. Show Dealer Name and 'demanded_verbatim' as value for 'Count of Repeat Repairs' in descending order."
 ),
 
 }

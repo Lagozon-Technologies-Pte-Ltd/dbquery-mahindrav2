@@ -429,7 +429,8 @@ def get_business_rule(intent, file_path='business_rules.txt'):
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             file_content = f.read()
-            business_rules = ast.literal_eval(file_content)
+            # Normalize all keys to lowercase for case-insensitive lookup
+            business_rules = {k.lower(): v for k, v in ast.literal_eval(file_content).items()}
     except Exception as e:
         return f"Error reading business rules file: {e}"
 
