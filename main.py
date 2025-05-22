@@ -609,10 +609,12 @@ async def submit_query(
         unified_prompt = PROMPTS["unified_prompt"].format(user_query=user_query, chat_history=chat_history, key_parameters=key_parameters, keyphrases=keyphrases)
         llm_reframed_query = llm.invoke(unified_prompt).content.strip()
         logger.info(f"LLM Unified Prompt Response: {llm_reframed_query}")
-        intent_table = intent_classification(llm_reframed_query)
+        intent_result = intent_classification(llm_reframed_query)
+        intent = intent_result["intent"]
+        intent_table = intent_result["tables"]
+        
         # if not intent_table:
         #     intent_table = "Please rephrase or add more details to your question as I am not able to assess the Intended Use case"
-        logger.info(f"Intent table: {intent_table}")
         if not intent_table:
             error_msg = "Please rephrase or add more details to your question as I am not able to assess the Intended Use case"
             session_state['messages'].append({
@@ -632,9 +634,11 @@ async def submit_query(
             }
             return JSONResponse(content=response_data)
         table_details = get_table_details(selected_subject=selected_subject,table_name=intent_table)
+        logger.info(f"Intent table: {intent_table}")
+        logger.info(f"Chosen Intent: {intent}")
         logger.info(f"table details: {table_details}")
 
-        selected_business_rule= get_business_rule(tables=intent_table)
+        selected_business_rule= get_business_rule(intent = intent_result["intent"])
         
 
 
@@ -762,7 +766,6 @@ async def read_root(request: Request):
     """
     # Extract table names dynamically
     tables = []
-
     # Pass dynamically populated dropdown options to the template
     return templates.TemplateResponse("index.html", {
         "request": request,

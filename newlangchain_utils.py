@@ -274,6 +274,7 @@ def get_chain(question, _messages, selected_model, selected_subject, selected_da
         ]
     )
     final_prompt = final_prompt1
+    print("langchain prompt: ", final_prompt)
     if selected_database=="GCP":
             db = BigQuerySQLDatabase()
     else:
@@ -398,26 +399,33 @@ def read_defaults(csv_content):
             value = datetime.now().strftime('%Y-%m-%d')
         result[key] = value
     return result
-
 def intent_classification(user_query):
     user_query_lower = user_query.lower()
     matched_tables = set()
+    detected_intent = None
+
     with open('table_files/Intentclass.csv', newline='', encoding='utf-8') as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
             keywords = [k.strip().lower() for k in row['Keywords'].replace(';', ',').split(',')]
             if any(keyword and keyword in user_query_lower for keyword in keywords):
-                # Split table names by ';' and add each to the set
+                detected_intent = row['Intent']
                 table_names = [t.strip() for t in row['tables'].split(';') if t.strip()]
                 matched_tables.update(table_names)
-    if matched_tables:
+                break  # stop after the first matching intent (optional)
+
+    if detected_intent and matched_tables:
+        print("Returned intent:", detected_intent)
         print("Returned tables from intent:", matched_tables)
-        return list(matched_tables)
+        return {
+            "intent": detected_intent,
+            "tables": list(matched_tables)
+        }
     return False
 
 import ast
 
-def get_business_rule(tables, file_path='business_rules.txt'):
+def get_business_rule(intent, file_path='business_rules.txt'):
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             file_content = f.read()
@@ -425,13 +433,7 @@ def get_business_rule(tables, file_path='business_rules.txt'):
     except Exception as e:
         return f"Error reading business rules file: {e}"
 
-    # Accept both single table (str) and list of tables
-    if isinstance(tables, str):
-        tables = [tables]
+    key = intent.lower().strip()
+    rule = business_rules.get(key)
 
-    rules = {}
-    for table in tables:
-        key = table.lower().strip()
-        rule = business_rules.get(key)
-        rules[table] = rule if rule else "No specific business rule defined for this table."
-    return rules
+    return rule if rule else f"No business rule defined for intent: {intent}"
