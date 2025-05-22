@@ -15,6 +15,11 @@ import sys
 sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 
 def get_table_details(selected_subject='Demo', table_name=None):
+    """
+    Returns details for one or more tables from a subject-specific CSV file.
+    - selected_subject: base name of CSV file (without .csv)
+    - table_name: string or list of strings (table names to filter on)
+    """
     # Build the path to the CSV file
     select_database_table_desc_csv = selected_subject + ".csv"
     path = f'table_files/{select_database_table_desc_csv}'
@@ -23,18 +28,27 @@ def get_table_details(selected_subject='Demo', table_name=None):
         table_description = pd.read_csv(path)
     except FileNotFoundError:
         return f"File not found: {path}"
-    
+    except Exception as e:
+        return f"Error reading file: {e}"
+
     table_details = ""
     print("path for csv: ", path)
 
     # Check if 'data_type' column exists
     has_data_type = 'data_type' in table_description.columns
 
-    # Filter for the requested table_name if provided
+    # Normalize table_name(s) for filtering
+    table_names = []
     if table_name:
-        filtered = table_description[table_description['table_name'].str.lower() == table_name.lower()]
+        if isinstance(table_name, str):
+            table_names = [t.strip().lower() for t in table_name.split(';') if t.strip()]
+        elif isinstance(table_name, list):
+            table_names = [t.strip().lower() for t in table_name if t.strip()]
+        else:
+            return "Invalid table_name argument."
+        filtered = table_description[table_description['table_name'].str.lower().isin(table_names)]
         if filtered.empty:
-            return f"No details found for table: {table_name}"
+            return f"No details found for table(s): {', '.join(table_names)}"
         grouped = filtered.groupby(['table_name', 'table_description'])
     else:
         grouped = table_description.groupby(['table_name', 'table_description'])
@@ -45,12 +59,13 @@ def get_table_details(selected_subject='Demo', table_name=None):
         table_details += "Columns:\n"
         for i, row in group.iterrows():
             # Parse column_name&description
-            if ':' in row['column_name&description']:
-                col_name, col_desc = row['column_name&description'].split(':', 1)
+            col_info = row.get('column_name&description', '')
+            if ':' in col_info:
+                col_name, col_desc = col_info.split(':', 1)
                 col_name = col_name.strip()
                 col_desc = col_desc.strip()
             else:
-                col_name = row['column_name&description'].strip()
+                col_name = col_info.strip()
                 col_desc = ""
             # Add data type if present
             if has_data_type:
