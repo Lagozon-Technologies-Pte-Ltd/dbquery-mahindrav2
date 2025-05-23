@@ -22,6 +22,9 @@ from azure.storage.blob import BlobServiceClient
 from starlette.middleware.base import BaseHTTPMiddleware
 import logging
 from logging.config import dictConfig
+import automotive_wordcloud_analysis as awa
+import zipfile
+from wordcloud import WordCloud
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -361,31 +364,66 @@ async def generate_chart(request: ChartRequest):
 @app.get("/download-table")
 async def download_table(table_name: str):
     """
-    Downloads a table as an Excel file.
+    Downloads a table as a ZIP file containing the Excel, word cloud image, and word frequency Excel.
 
     Args:
         table_name (str): The name of the table to download.
 
     Returns:
-        StreamingResponse: A streaming response containing the Excel file.
+        StreamingResponse: A zip file containing the Excel file, word cloud, and frequency Excel.
     """
-    # Check if the requested table exists in session state
+    # Validate table
     if "tables_data" not in session_state or table_name not in session_state["tables_data"]:
         raise HTTPException(status_code=404, detail=f"Table {table_name} data not found.")
 
-    # Get the table data from session_state
-    data = session_state["tables_data"][table_name]
+    # Retrieve DataFrame
+    data: pd.DataFrame = session_state["tables_data"][table_name]
 
-    # Generate Excel file
-    output = download_as_excel(data, filename=f"{table_name}.xlsx")
+    # Step 1: Generate Excel in memory
+    excel_buffer = BytesIO()
+    with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
+        data.to_excel(writer, index=False, sheet_name='Sheet1')
+    excel_buffer.seek(0)
 
-    # Return the Excel file as a streaming response
-    response = StreamingResponse(
-        output,
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    # Step 2: Generate word cloud and word frequency Excel
+    frequency_buffer = BytesIO()
+    image_path = None
+
+    if 'demanded_verbatim' in data.columns:
+        data['processed_text'] = data['demanded_verbatim'].apply(lambda x: awa.process_text(str(x)))
+        all_text = ' '.join(data['processed_text'])
+
+        # Generate word cloud
+        awa.generate_wordcloud(all_text)
+        image_path = os.path.join("static", awa.OUTPUT_IMAGE)
+
+        # Analyze frequency and write to Excel in-memory
+        freq = awa.analyze_frequencies(all_text)
+        freq_df = pd.DataFrame(freq.most_common(), columns=['Component/Word', 'Count'])
+        with pd.ExcelWriter(frequency_buffer, engine='xlsxwriter') as writer:
+            freq_df.to_excel(writer, index=False, sheet_name='WordFrequency')
+        frequency_buffer.seek(0)
+
+    # Step 3: Package all into ZIP
+    zip_buffer = BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w") as zf:
+        zf.writestr(f"{table_name}.xlsx", excel_buffer.getvalue())
+        if image_path and os.path.exists(image_path):
+            with open(image_path, "rb") as img_file:
+                zf.writestr("wordcloud.png", img_file.read())
+        if frequency_buffer.getbuffer().nbytes > 0:
+            zf.writestr("word_frequency_analysis.xlsx", frequency_buffer.getvalue())
+
+    zip_buffer.seek(0)
+
+    return StreamingResponse(
+        zip_buffer,
+        media_type="application/x-zip-compressed",
+        headers={
+            "Content-Disposition": f"attachment; filename={table_name}_report.zip"
+        }
     )
-    response.headers["Content-Disposition"] = f"attachment; filename={table_name}.xlsx"
-    return response
+
 # Replace APIRouter with direct app.post
 def format_number(x):
     if isinstance(x, int):  # Check if x is an integer

@@ -145,6 +145,6 @@
     "Display Dealer ZONE, DEALER AREA OFFICE and 'demanded_verbatim' as value for 'Count of Repeat Repairs' in descending order.\n"
     "11. When asked for Top Model (MODEL_GROUP and FAMILY_DESC) for Word Cloud, use model_cd as unique key and do the calculation. "
     "Add MODL_GROUP_DESC and FAMILY_DESC in the display. Show Dealer Name and 'demanded_verbatim' as value for 'Count of Repeat Repairs' in descending order."
-),
+)
 
 }
