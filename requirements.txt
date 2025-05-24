@@ -116,7 +116,7 @@ multiprocess==0.70.16
 murmurhash==1.0.13
 mypy-extensions==1.0.0
 nest-asyncio==1.6.0
-numpy==1.26.4
+numpy
 oauthlib==3.2.2
 onnxruntime==1.17.1
 openai==1.17.0
