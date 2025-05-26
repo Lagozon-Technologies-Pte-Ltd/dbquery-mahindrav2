@@ -26,7 +26,7 @@ MH_MODEL_MASTER,Contains vehicle model master data,TRANSMISSION (STRING) NULLABL
 MH_AD_AI_DIMENSION,Contains dealer and sales hierarchy dimension data,delr_name (STRING) NULLABLE: Dealer Name
 MH_AD_AI_DIMENSION,Contains dealer and sales hierarchy dimension data,prodct_divsn (STRING) NULLABLE: Product Division
 MH_AD_AI_DIMENSION,Contains dealer and sales hierarchy dimension data,actv_ind (STRING) NULLABLE: Active Indicator
-MH_AD_AI_DIMENSION,Contains dealer and sales hierarchy dimension data,parnt_grp (STRING) NULLABLE: Parent Group Code
+MH_AD_AI_DIMENSION,Contains dealer and sales hierarchy dimension data,parnt_grop (STRING) NULLABLE: Parent Group Code
 MH_AD_AI_DIMENSION,Contains dealer and sales hierarchy dimension data,PARENT_GROUP_NAME (STRING) NULLABLE: Parent Group Name
 MH_AD_AI_DIMENSION,Contains dealer and sales hierarchy dimension data,loctn_name (STRING) NULLABLE: Location Name
 MH_AD_AI_DIMENSION,Contains dealer and sales hierarchy dimension data,loctn_cd (STRING) NULLABLE: Location Code

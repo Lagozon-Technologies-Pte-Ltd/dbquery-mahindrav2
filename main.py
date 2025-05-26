@@ -701,14 +701,15 @@ async def submit_query(
         if chosen_tables:
             data_preview = tables_data[chosen_tables[0]].head(5).to_string(index=False) if chosen_tables else "No Data"
             logger.info(f"Data Preview: {data_preview}")
-            insights_prompt = PROMPTS["insights_prompt"].format(
-                sql_query=sql_query,
-                table_data=tables_data
-            )
+            # insights_prompt = PROMPTS["insights_prompt"].format(
+            #     sql_query=sql_query,
+            #     table_data=tables_data
+            # )
 
-            chat_insight = llm.invoke(insights_prompt).content
+            # chat_insight = llm.invoke(insights_prompt).content
+            chat_insight = ""  #this text will be passed to chat_insight when insight prompt is commented
             logger.info(f"Chat Insight: {chat_insight}")
-
+            
         # Append AI's response to chat history
         session_state['messages'].append({
             "role": "assistant",

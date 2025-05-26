@@ -20,18 +20,7 @@ unified_prompt: |
   User Query:
   {user_query}
   
-   ## Special Handling for "Word Cloud":
-  If the user requests a **word cloud**, e.g., for a given `MODEL_GROP`, then return a query instruction that includes the following:
-  - **Filters**: on the specified `MODEL_GROP` and any date range provided.
-  - **Columns to include**:
-      - `Model_Grop`
-      - `verbatim_group`
-      - `verbatim_code`
-      - `cust_verbtm_desc`
-      - `verbatim_group_desc`
-      - `demanded_varbatim`
-  - Include a **frequency count based on `verbatim_code`**, using `GROUP BY verbatim_code`.
-  - Exclude 'demanded_verbatim' having words like '%SCHEDULE%', '%WASHING%', '%MAXICARE%', '%WHEEL ALIGNMENT%', '%WHEEL BALANCE%','%SERVICE ACTION%' ,'%10000%','%1000%','%5000%',,'%KM%    
+  
   - Always rephrase queries in a single simple statement, if it is a fresh query (no chat history is available).
 
 insights_prompt: |

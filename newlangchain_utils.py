@@ -50,7 +50,6 @@ from langchain_core.runnables import RunnablePassthrough
 from langchain_openai import ChatOpenAI
 
 
-# from prompts import final_prompt2
 
 from table_details import get_table_details , get_tables , itemgetter , create_extraction_chain_pydantic, Table 
 from sqlalchemy import create_engine, text
@@ -146,7 +145,6 @@ def load_votes(table_name):
 def get_postgres_db(selected_subject, mahindra_tables):
     print("SELECTED SUB",selected_subject,mahindra_tables)
     try:
-        print(f'postgresql+psycopg2://{quote_plus(db_user)}:{quote_plus(db_password)}@{db_host}:{db_port}/{db_database}')
         print(db_schema)
         db = SQLDatabase.from_uri(
             f'postgresql+psycopg2://{quote_plus(db_user)}:{quote_plus(db_password)}@{db_host}:{db_port}/{db_database}',
@@ -236,17 +234,23 @@ class BigQuerySQLDatabase(SQLDatabase):
         return schema_info
 db = BigQuerySQLDatabase()
 
-table_info = db.get_table_info()
-#Save table_info to a text file
-with open("table_info.txt", "w") as file:
-    file.write(str(table_info))
+# table_info = db.get_table_info()
+# #Save table_info to a text file
+# with open("table_info.txt", "w") as file:
+#     file.write(str(table_info))
 
-print("Table info saved successfully to table_info.txt")
+# print("Table info saved successfully to table_info.txt")
 # @cache_resource
 def get_chain(question, _messages, selected_model, selected_subject, selected_database, table_details, selected_business_rule):
+    if selected_database == 'GCP':
+        prompt_file = "GCP_prompt.txt"
+    if selected_database == 'PostgreSQL-Azure':
+        prompt_file = "Postgres_prompt.txt"
+    
+    
     llm = ChatOpenAI(model=selected_model, temperature=0)
     def load_prompt():
-        with open("final_prompt.txt", "r", encoding="utf-8") as file:
+        with open(prompt_file, "r", encoding="utf-8") as file:
             return file.read()
 
     FINAL_PROMPT = load_prompt()

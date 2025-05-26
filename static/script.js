@@ -354,7 +354,7 @@ async function sendMessage() {
             <div class="message ai-message">
                 <div class="message-content">
                     LLM Interpretation: ${data.llm_response}<br>
-                    Insight: ${botResponse}
+                    
                 </div>
             </div>
         `;
