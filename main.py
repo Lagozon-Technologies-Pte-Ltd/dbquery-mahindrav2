@@ -648,12 +648,15 @@ async def submit_query(
         llm_reframed_query = llm.invoke(unified_prompt).content.strip()
         logger.info(f"LLM Unified Prompt Response: {llm_reframed_query}")
         intent_result = intent_classification(llm_reframed_query)
-        intent = intent_result["intent"]
-        intent_table = intent_result["tables"]
-        
+        logger.info(f"Intent Result: {intent_result}")
+
+        if intent_result:
+            intent = intent_result["intent"]
+            intent_table = intent_result["tables"]
+            
         # if not intent_table:
         #     intent_table = "Please rephrase or add more details to your question as I am not able to assess the Intended Use case"
-        if not intent_table:
+        else:
             error_msg = "Please rephrase or add more details to your question as I am not able to assess the Intended Use case"
             session_state['messages'].append({
                 "role": "assistant",

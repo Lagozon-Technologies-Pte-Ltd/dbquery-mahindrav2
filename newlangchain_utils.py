@@ -268,10 +268,10 @@ def get_chain(question, _messages, selected_model, selected_subject, selected_da
         example_selector=get_example_selector(),
         input_variables=["input","top_k","table_info"],
     )
-
+    business_glossary = get_business_glossary_text()
     final_prompt1 = ChatPromptTemplate.from_messages(
         [
-            ("system", static_prompt.format(table_info=table_details, Business_Rule = selected_business_rule)),
+            ("system", static_prompt.format(table_info=table_details, Business_Rule = selected_business_rule, Business_Glossary = business_glossary)),
             few_shot_prompt,
             MessagesPlaceholder(variable_name="messages"),
             ("human", "{input}"),
