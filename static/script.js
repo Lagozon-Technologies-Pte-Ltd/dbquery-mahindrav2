@@ -344,7 +344,7 @@ async function sendMessage() {
             botResponse = data.chat_response || "I couldn't find any insights for this query.";
         } else {
             document.getElementById("sql-query-content").textContent = data.query;
-            botResponse = data.chat_response || "Here's what I found:";
+            botResponse = data.chat_response || "";
         }
         console.log("interprompt: ", data.interprompt)
         document.getElementById("lang-prompt-content").textContent = data.langprompt;
@@ -354,7 +354,7 @@ async function sendMessage() {
             <div class="message ai-message">
                 <div class="message-content">
                     LLM Interpretation: ${data.llm_response}<br>
-                    
+                    ${botResponse}
                 </div>
             </div>
         `;
