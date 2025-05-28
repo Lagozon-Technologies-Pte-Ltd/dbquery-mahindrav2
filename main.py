@@ -85,7 +85,7 @@ except Exception as e:
     print(f"Error initializing BlobServiceClient: {e}")
     # Handle the error appropriately, possibly exiting the application
     raise  # Re-raise the exception to prevent the app from starting
-
+from pydantic import BaseModel
 class ChartRequest(BaseModel):
     """
     Pydantic model for chart generation requests.
